@@ -4,6 +4,10 @@
 <title>KijiPOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- ✅ PWA CONFIG -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
+
 <style>
 body { font-family:Segoe UI; background:#f4f7fb; padding:15px;}
 .card { background:white; padding:18px; border-radius:15px; margin-bottom:15px; box-shadow:0 6px 15px rgba(0,0,0,0.08);}
@@ -39,6 +43,9 @@ z-index:999;
 </div>
 
 <h2 id="bizName"></h2>
+
+<!-- ✅ INSTALL BUTTON -->
+<button class="primary" id="installBtn" style="display:none;">📲 Install App</button>
 
 <div class="card">
 <h3>Dashboard</h3>
@@ -94,7 +101,7 @@ z-index:999;
 <script>
 
 //////////////////////////////
-// 🔑 CONFIG (ONLY EDIT THIS)
+// 🔑 CONFIG
 //////////////////////////////
 
 const CONFIG = {
@@ -103,7 +110,7 @@ LICENSE_CODE: "mms-2500-9147"
 };
 
 //////////////////////////////
-// LOCK SETUP
+// LOCK SYSTEM
 //////////////////////////////
 
 bizName.innerText = "📊 " + CONFIG.BUSINESS_NAME;
@@ -136,6 +143,24 @@ lockScreen.style.display="none";
 }
 
 //////////////////////////////
+// 📲 INSTALL APP LOGIC
+//////////////////////////////
+
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+e.preventDefault();
+deferredPrompt = e;
+document.getElementById("installBtn").style.display = "block";
+});
+
+document.getElementById("installBtn").onclick = () => {
+if(deferredPrompt){
+deferredPrompt.prompt();
+}
+};
+
+//////////////////////////////
 // DATA
 //////////////////////////////
 
@@ -151,38 +176,36 @@ render();
 }
 
 //////////////////////////////
-// CORE LOGIC (UNCHANGED)
+// 🔄 SERVICE WORKER (OFFLINE)
+//////////////////////////////
+
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('sw.js')
+.then(()=>console.log("✅ Offline Ready"))
+.catch(err=>console.log(err));
+}
+
+//////////////////////////////
+// REST OF YOUR LOGIC (UNCHANGED)
 //////////////////////////////
 
 function addSale(){
-
 let selectedProduct = products[productSelect.value];
 
-// STOCK CONTROL (ONLY IF PRODUCT EXISTS)
 if(selectedProduct){
-
-// Extract numeric value if possible
 let numericStock = parseFloat(selectedProduct.stock);
 
-// If it's a number → deduct
 if(!isNaN(numericStock)){
-
 if(numericStock <= 0){
 alert("❌ Out of stock");
 return;
 }
-
-// Deduct 1 unit
 numericStock -= 1;
-
-// Save back (preserve unit if exists)
 let unit = selectedProduct.stock.toString().replace(/[0-9.]/g,"").trim();
 selectedProduct.stock = unit ? numericStock + " " + unit : numericStock;
-
 }
 }
 
-// SAVE TRANSACTION
 tx.push({
 id:Date.now(),
 type:"SALE",
@@ -192,7 +215,6 @@ amount:+saleAmount.value
 
 saleAmount.value="";
 saleDesc.value="";
-
 save();
 }
 
