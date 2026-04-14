@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>KijiPOS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body { font-family:Segoe UI; background:#f4f7fb; padding:15px;}
+.card { background:white; padding:18px; border-radius:15px; margin-bottom:15px; box-shadow:0 6px 15px rgba(0,0,0,0.08);}
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px;}
+.box { background:#eef2ff; padding:10px; border-radius:10px; text-align:center;}
+input,select { width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #ccc;}
+button { padding:10px; margin-top:8px; width:100%; border:none; border-radius:10px; font-weight:bold; color:white;}
+.primary { background:linear-gradient(90deg,#4f46e5,#3b82f6);}
+.danger { background:#111827;}
+.edit { background:orange; width:auto;}
+.delete { background:red; width:auto;}
+.tx { border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; flex-wrap:wrap;}
+.sale { color:green; font-weight:bold;}
+.expense { color:red; font-weight:bold;}
+
+#lockScreen{
+position:fixed; top:0; left:0; width:100%; height:100%;
+background:#111827; color:white;
+display:flex; align-items:center; justify-content:center;
+flex-direction:column;
+z-index:999;
+}
+</style>
+</head>
+
+<body>
+
+<div id="lockScreen">
+<h2 id="lockTitle"></h2>
+<p>Enter License Code</p>
+<input id="unlockCode" placeholder="License Code">
+<button class="primary" onclick="unlockApp()">Unlock</button>
+</div>
+
+<h2 id="bizName"></h2>
+
+<div class="card">
+<h3>Dashboard</h3>
+<div class="grid">
+<div class="box">Opening<br><span id="openingDisplay">0</span></div>
+<div class="box">Sales<br><span id="sales">0</span></div>
+<div class="box">Expenses<br><span id="expenses">0</span></div>
+<div class="box">Profit<br><span id="profit">0</span></div>
+<div class="box">Closing<br><span id="closing">0</span></div>
+<div class="box">Transactions<br><span id="count">0</span></div>
+</div>
+</div>
+
+<div class="card">
+<h3>Add Sale</h3>
+<select id="productSelect" onchange="fillPrice()"></select>
+<input id="saleAmount" type="number" placeholder="Amount">
+<input id="saleDesc" placeholder="Product / Service">
+<button class="primary" onclick="addSale()">Save Sale</button>
+</div>
+
+<div class="card">
+<h3>Add Expense</h3>
+<input id="expAmount" type="number" placeholder="Amount">
+<input id="expDesc" placeholder="Expense name">
+<button class="primary" onclick="addExpense()">Save Expense</button>
+</div>
+
+<div class="card">
+<h3>📦 Inventory</h3>
+<input id="pName" placeholder="Product name">
+<input id="pPrice" type="number" placeholder="Price">
+<input id="pStock" placeholder="Stock (kg, pcs, litres)">
+<button class="primary" onclick="addProduct()">Add Product</button>
+<button class="primary" onclick="updateProduct()">Update Product</button>
+<button class="primary" onclick="exportInventory()">Download Inventory Excel</button>
+<p id="msg"></p>
+</div>
+
+<div class="card">
+<h3>Transactions</h3>
+<input id="search" placeholder="Search..." onkeyup="render()">
+<div id="list"></div>
+</div>
+
+<div class="card">
+<button class="primary" onclick="exportExcel()">Download Report</button>
+<button class="danger" onclick="closeDay()">Close Day</button>
+</div>
+
+<p style="text-align:center;color:gray;">Built by Denistone Muiruri 🚀</p>
+
+<script>
+
+//////////////////////////////
+// 🔑 CONFIG (ONLY EDIT THIS)
+//////////////////////////////
+
+const CONFIG = {
+BUSINESS_NAME: "Mary Movie Shop",
+LICENSE_CODE: "mms-2500-9147"
+};
+
+//////////////////////////////
+// LOCK SETUP
+//////////////////////////////
+
+bizName.innerText = "📊 " + CONFIG.BUSINESS_NAME;
+lockTitle.innerText = CONFIG.BUSINESS_NAME;
+
+let device = localStorage.getItem("device_id") || Math.random().toString(36);
+localStorage.setItem("device_id", device);
+
+let allowed = localStorage.getItem("allowed_device");
+
+if(!allowed){
+localStorage.setItem("allowed_device", device);
+}else if(allowed !== device){
+document.body.innerHTML="<h2>❌ Unauthorized Device</h2>";
+}
+
+let unlocked = localStorage.getItem("unlock_"+CONFIG.BUSINESS_NAME);
+
+function unlockApp(){
+if(unlockCode.value === CONFIG.LICENSE_CODE){
+localStorage.setItem("unlock_"+CONFIG.BUSINESS_NAME,"true");
+lockScreen.style.display="none";
+}else{
+alert("Invalid Code ❌");
+}
+}
+
+if(unlocked==="true"){
+lockScreen.style.display="none";
+}
+
+//////////////////////////////
+// DATA
+//////////////////////////////
+
+let tx = JSON.parse(localStorage.getItem("tx_"+CONFIG.BUSINESS_NAME)) || [];
+let products = JSON.parse(localStorage.getItem("products_"+CONFIG.BUSINESS_NAME)) || [];
+let opening = Number(localStorage.getItem("opening_"+CONFIG.BUSINESS_NAME)) || 0;
+
+function save(){
+localStorage.setItem("tx_"+CONFIG.BUSINESS_NAME, JSON.stringify(tx));
+localStorage.setItem("products_"+CONFIG.BUSINESS_NAME, JSON.stringify(products));
+localStorage.setItem("opening_"+CONFIG.BUSINESS_NAME, opening);
+render();
+}
+
+//////////////////////////////
+// CORE LOGIC (UNCHANGED)
+//////////////////////////////
+
+function addSale(){
+
+let selectedProduct = products[productSelect.value];
+
+// STOCK CONTROL (ONLY IF PRODUCT EXISTS)
+if(selectedProduct){
+
+// Extract numeric value if possible
+let numericStock = parseFloat(selectedProduct.stock);
+
+// If it's a number → deduct
+if(!isNaN(numericStock)){
+
+if(numericStock <= 0){
+alert("❌ Out of stock");
+return;
+}
+
+// Deduct 1 unit
+numericStock -= 1;
+
+// Save back (preserve unit if exists)
+let unit = selectedProduct.stock.toString().replace(/[0-9.]/g,"").trim();
+selectedProduct.stock = unit ? numericStock + " " + unit : numericStock;
+
+}
+}
+
+// SAVE TRANSACTION
+tx.push({
+id:Date.now(),
+type:"SALE",
+name:saleDesc.value || selectedProduct?.name || "Sale",
+amount:+saleAmount.value
+});
+
+saleAmount.value="";
+saleDesc.value="";
+
+save();
+}
+
+function addExpense(){
+tx.push({id:Date.now(),type:"EXPENSE",name:expDesc.value,amount:+expAmount.value});
+expAmount.value=""; expDesc.value="";
+save();
+}
+
+function deleteTx(id){ tx=tx.filter(t=>t.id!==id); save(); }
+
+function editTx(id){
+let t=tx.find(x=>x.id===id);
+let a=prompt("Amount",t.amount); if(a!==null) t.amount=+a;
+let n=prompt("Name",t.name); if(n!==null) t.name=n;
+save();
+}
+
+function addProduct(){
+if(products.find(p=>p.name.toLowerCase()===pName.value.toLowerCase())){
+msg.innerText="❌ Exists"; return;
+}
+products.push({name:pName.value,price:+pPrice.value,stock:pStock.value});
+msg.innerText="✅ Added";
+pName.value=pPrice.value=pStock.value="";
+save();
+}
+
+function updateProduct(){
+let p=products.find(x=>x.name.toLowerCase()===pName.value.toLowerCase());
+if(!p){ msg.innerText="❌ Not found"; return;}
+if(pPrice.value) p.price=+pPrice.value;
+if(pStock.value) p.stock=pStock.value;
+msg.innerText="✅ Updated";
+save();
+}
+
+function fillPrice(){
+let p=products[productSelect.value];
+if(p) saleAmount.value=p.price;
+}
+
+function exportInventory(){
+let rows=[["Name","Price","Stock"]];
+products.forEach(p=>rows.push([p.name,p.price,p.stock]));
+download(rows,"Inventory.csv");
+}
+
+function closeDay(){
+exportExcel(true);
+
+let s=0,e=0,bal=opening;
+tx.forEach(t=>{
+t.type==="SALE"?(s+=t.amount,bal+=t.amount):(e+=t.amount,bal-=t.amount);
+});
+
+let choice=prompt(`Closing: ${bal}\n1 Carry\n2 Edit\n3 Zero`);
+
+if(choice=="1") opening=bal;
+else if(choice=="2") opening=+prompt("Enter opening",bal);
+else opening=0;
+
+tx=[];
+save();
+}
+
+function exportExcel(auto=false){
+let rows=[["TYPE","NAME","AMOUNT"]];
+let s=0,e=0;
+tx.forEach(t=>{
+rows.push([t.type,t.name,t.amount]);
+t.type==="SALE"?s+=t.amount:e+=t.amount;
+});
+rows.push([]);
+rows.push(["TOTAL SALES","",s]);
+rows.push(["TOTAL EXPENSES","",e]);
+rows.push(["PROFIT","",s-e]);
+download(rows, auto?"AUTO_REPORT.csv":"REPORT.csv");
+}
+
+function download(rows,name){
+let blob=new Blob([rows.map(r=>r.join(",")).join("\n")]);
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download=name;
+a.click();
+}
+
+function render(){
+let s=0,e=0,bal=opening;
+let html="";
+
+productSelect.innerHTML="";
+products.forEach((p,i)=>{
+productSelect.innerHTML+=`<option value="${i}">${p.name} (${p.stock})</option>`;
+});
+
+tx.forEach(t=>{
+t.type==="SALE"?(s+=t.amount,bal+=t.amount):(e+=t.amount,bal-=t.amount);
+
+if(t.name.toLowerCase().includes(search.value.toLowerCase())){
+html+=`
+<div class="tx">
+<div class="${t.type==='SALE'?'sale':'expense'}">
+${t.type} - ${t.name} : KES ${t.amount}
+</div>
+<div>
+<button class="edit" onclick="editTx(${t.id})">Edit</button>
+<button class="delete" onclick="deleteTx(${t.id})">Delete</button>
+</div>
+</div>`;
+}
+});
+
+openingDisplay.innerText=opening;
+sales.innerText=s;
+expenses.innerText=e;
+profit.innerText=s-e;
+closing.innerText=bal;
+count.innerText=tx.length;
+
+list.innerHTML=html;
+}
+
+render();
+
+</script>
+
+</body>
+</html>
