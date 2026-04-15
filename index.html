@@ -37,7 +37,11 @@ z-index:999;
 
 <div id="lockScreen">
 <h2 id="lockTitle"></h2>
-<p>Enter License Code</p>
+<p>
+🔒 Trial expired<br><br>
+Call/WhatsApp: 0768675139<br>
+Unlock fee: KES 2500
+</p>
 <input id="unlockCode" placeholder="License Code">
 <button class="primary" onclick="unlockApp()">Unlock</button>
 </div>
@@ -115,12 +119,13 @@ LICENSE_CODE: "SALON-2847-KAREN"
 };
 
 //////////////////////////////
-// 🔐 TRIAL + LOCK SYSTEM
+// 🔐 TRIAL + LOCK SYSTEM (IMPROVED)
 //////////////////////////////
 
 bizName.innerText = "📊 " + CONFIG.BUSINESS_NAME;
 lockTitle.innerText = CONFIG.BUSINESS_NAME;
 
+// DEVICE LOCK
 let device = localStorage.getItem("device_id") || Math.random().toString(36);
 localStorage.setItem("device_id", device);
 
@@ -132,10 +137,11 @@ localStorage.setItem("allowed_device", device);
 document.body.innerHTML="<h2>❌ Unauthorized Device</h2>";
 }
 
-// ✅ TRIAL SYSTEM
+// TRIAL KEYS
 let FIRST_USE_KEY = "first_use_" + CONFIG.BUSINESS_NAME;
-let UNLOCK_KEY = "unlock_" + CONFIG.BUSINESS_NAME;
+let PAID_KEY = "paid_" + CONFIG.BUSINESS_NAME;
 
+// FIRST TIME INSTALL
 let firstUse = localStorage.getItem(FIRST_USE_KEY);
 
 if(!firstUse){
@@ -143,22 +149,34 @@ firstUse = Date.now();
 localStorage.setItem(FIRST_USE_KEY, firstUse);
 }
 
+// TIME CALCULATION
 let now = Date.now();
-let daysUsed = (now - firstUse) / (1000 * 60 * 60 * 24);
+let daysPassed = Math.floor((now - firstUse) / (1000 * 60 * 60 * 24));
+let daysLeft = 7 - daysPassed;
 
-let unlocked = localStorage.getItem(UNLOCK_KEY);
+let paid = localStorage.getItem(PAID_KEY);
 
-// LOCK AFTER 7 DAYS
-if(daysUsed > 7 && unlocked !== "true"){
-lockScreen.style.display = "flex";
-}else{
+// LOCK LOGIC
+if(paid === "yes"){
 lockScreen.style.display = "none";
 }
+else if(daysPassed >= 7){
+lockScreen.style.display = "flex";
+lockTitle.innerText = CONFIG.BUSINESS_NAME + " 🔒 Trial Expired";
+}
+else{
+lockScreen.style.display = "none";
 
-// UNLOCK
+// OPTIONAL: show remaining days
+setTimeout(()=>{
+alert("⏳ Trial: " + daysLeft + " day(s) remaining");
+},1000);
+}
+
+// UNLOCK FUNCTION
 function unlockApp(){
 if(unlockCode.value === CONFIG.LICENSE_CODE){
-localStorage.setItem(UNLOCK_KEY, "true");
+localStorage.setItem(PAID_KEY, "yes");
 lockScreen.style.display="none";
 }else{
 alert("Invalid Code ❌");
