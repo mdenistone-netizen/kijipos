@@ -61,7 +61,12 @@ z-index:999;
 
 <div class="card">
 <h3>Add Sale</h3>
+
+<!-- ✅ NEW SEARCH -->
+<input id="productSearch" placeholder="Search product..." onkeyup="filterProducts()">
+
 <select id="productSelect" onchange="fillPrice()"></select>
+
 <input id="saleAmount" type="number" placeholder="Amount">
 <input id="saleDesc" placeholder="Product / Service">
 <button class="primary" onclick="addSale()">Save Sale</button>
@@ -110,7 +115,7 @@ LICENSE_CODE: "mms-2500-9147"
 };
 
 //////////////////////////////
-// LOCK SYSTEM
+// 🔐 TRIAL + LOCK SYSTEM
 //////////////////////////////
 
 bizName.innerText = "📊 " + CONFIG.BUSINESS_NAME;
@@ -127,23 +132,41 @@ localStorage.setItem("allowed_device", device);
 document.body.innerHTML="<h2>❌ Unauthorized Device</h2>";
 }
 
-let unlocked = localStorage.getItem("unlock_"+CONFIG.BUSINESS_NAME);
+// ✅ TRIAL SYSTEM
+let FIRST_USE_KEY = "first_use_" + CONFIG.BUSINESS_NAME;
+let UNLOCK_KEY = "unlock_" + CONFIG.BUSINESS_NAME;
 
+let firstUse = localStorage.getItem(FIRST_USE_KEY);
+
+if(!firstUse){
+firstUse = Date.now();
+localStorage.setItem(FIRST_USE_KEY, firstUse);
+}
+
+let now = Date.now();
+let daysUsed = (now - firstUse) / (1000 * 60 * 60 * 24);
+
+let unlocked = localStorage.getItem(UNLOCK_KEY);
+
+// LOCK AFTER 7 DAYS
+if(daysUsed > 7 && unlocked !== "true"){
+lockScreen.style.display = "flex";
+}else{
+lockScreen.style.display = "none";
+}
+
+// UNLOCK
 function unlockApp(){
 if(unlockCode.value === CONFIG.LICENSE_CODE){
-localStorage.setItem("unlock_"+CONFIG.BUSINESS_NAME,"true");
+localStorage.setItem(UNLOCK_KEY, "true");
 lockScreen.style.display="none";
 }else{
 alert("Invalid Code ❌");
 }
 }
 
-if(unlocked==="true"){
-lockScreen.style.display="none";
-}
-
 //////////////////////////////
-// 📲 INSTALL APP LOGIC
+// 📲 INSTALL APP
 //////////////////////////////
 
 let deferredPrompt;
@@ -176,17 +199,31 @@ render();
 }
 
 //////////////////////////////
-// 🔄 SERVICE WORKER (OFFLINE)
+// 🔍 SEARCH PRODUCTS
 //////////////////////////////
 
-if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('sw.js')
-.then(()=>console.log("✅ Offline Ready"))
-.catch(err=>console.log(err));
+function filterProducts(){
+let keyword = document.getElementById("productSearch").value.toLowerCase();
+
+productSelect.innerHTML="";
+
+products.forEach((p,i)=>{
+if(p.name.toLowerCase().includes(keyword)){
+productSelect.innerHTML += `<option value="${i}">${p.name} (${p.stock})</option>`;
+}
+});
 }
 
 //////////////////////////////
-// REST OF YOUR LOGIC (UNCHANGED)
+// OFFLINE
+//////////////////////////////
+
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('sw.js');
+}
+
+//////////////////////////////
+// LOGIC
 //////////////////////////////
 
 function addSale(){
