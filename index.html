@@ -175,9 +175,30 @@ alert("⏳ Trial: " + daysLeft + " day(s) remaining");
 
 // UNLOCK FUNCTION
 function unlockApp(){
+
+let currentDevice = localStorage.getItem("device_id");
+let LICENSE_USED_KEY = "license_used_" + CONFIG.BUSINESS_NAME;
+
+// Check if license already used on another device
+let usedDevice = localStorage.getItem(LICENSE_USED_KEY);
+
+if(usedDevice && usedDevice !== currentDevice){
+alert("❌ License already used on another device");
+return;
+}
+
+// Validate license code
 if(unlockCode.value === CONFIG.LICENSE_CODE){
+
+// Mark as paid
 localStorage.setItem(PAID_KEY, "yes");
+
+// Bind license to THIS device
+localStorage.setItem(LICENSE_USED_KEY, currentDevice);
+
+// Unlock app
 lockScreen.style.display="none";
+
 }else{
 alert("Invalid Code ❌");
 }
