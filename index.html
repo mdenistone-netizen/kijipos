@@ -38,17 +38,15 @@ flex-direction:column;
 z-index:999;
 }
 
-/* 🔥 PREMIUM HEADER */
-.header {
+.header{
 text-align:center;
-margin-bottom:10px;
 padding:10px;
 background:linear-gradient(90deg,#4f46e5,#3b82f6);
 color:white;
 border-radius:12px;
+margin-bottom:10px;
 }
-
-.badge {
+.badge{
 font-size:12px;
 background:#111827;
 padding:4px 8px;
@@ -68,7 +66,7 @@ margin-top:5px;
 
 <div id="lockScreen">
 <h2 id="lockTitle"></h2>
-<p style="text-align:center;">
+<p>
 🔒 Trial expired<br><br>
 Call/WhatsApp: 0768675139<br>
 Unlock fee: KES 4500
@@ -81,6 +79,7 @@ Unlock fee: KES 4500
 
 <button class="primary" id="installBtn" style="display:none;">📲 Install App</button>
 
+<!-- DASHBOARD -->
 <div class="card">
 <h3>Dashboard</h3>
 <div class="grid">
@@ -93,6 +92,7 @@ Unlock fee: KES 4500
 </div>
 </div>
 
+<!-- SALES -->
 <div class="card">
 <h3>Add Sale</h3>
 
@@ -105,6 +105,7 @@ Unlock fee: KES 4500
 <button class="primary" onclick="addSale()">Save Sale</button>
 </div>
 
+<!-- EXPENSE -->
 <div class="card">
 <h3>Add Expense</h3>
 <input id="expAmount" type="number" placeholder="Amount">
@@ -112,6 +113,7 @@ Unlock fee: KES 4500
 <button class="primary" onclick="addExpense()">Save Expense</button>
 </div>
 
+<!-- INVENTORY -->
 <div class="card">
 <h3>📦 Inventory</h3>
 <input id="pName" placeholder="Product name">
@@ -123,6 +125,7 @@ Unlock fee: KES 4500
 <p id="msg"></p>
 </div>
 
+<!-- TRANSACTIONS -->
 <div class="card">
 <h3>Transactions</h3>
 <input id="search" placeholder="Search..." onkeyup="render()">
@@ -134,8 +137,6 @@ Unlock fee: KES 4500
 <button class="danger" onclick="closeDay()">Close Day</button>
 </div>
 
-<p style="text-align:center;color:gray;">Built by Denistone 🚀</p>
-
 <script>
 
 const CONFIG = {
@@ -146,7 +147,7 @@ LICENSE_CODE: "SALON-2847-KAREN"
 bizName.innerText = "📊 " + CONFIG.BUSINESS_NAME;
 lockTitle.innerText = CONFIG.BUSINESS_NAME;
 
-/* 🔐 DEVICE + LICENSE SYSTEM */
+/* DEVICE + 2 DEVICE LIMIT */
 let device = localStorage.getItem("device_id") || Math.random().toString(36);
 localStorage.setItem("device_id", device);
 
@@ -154,15 +155,15 @@ let DEVICES_KEY = "devices_" + CONFIG.BUSINESS_NAME;
 let devices = JSON.parse(localStorage.getItem(DEVICES_KEY) || "[]");
 
 if(!devices.includes(device)){
-  if(devices.length < 2){
-    devices.push(device);
-    localStorage.setItem(DEVICES_KEY, JSON.stringify(devices));
-  } else {
-    document.body.innerHTML = "<h2>❌ Only 2 devices allowed</h2>";
-  }
+if(devices.length < 2){
+devices.push(device);
+localStorage.setItem(DEVICES_KEY, JSON.stringify(devices));
+}else{
+document.body.innerHTML="<h2>❌ Only 2 devices allowed</h2>";
+}
 }
 
-/* 🔐 TRIAL SYSTEM */
+/* TRIAL */
 let FIRST_USE_KEY = "first_use_" + CONFIG.BUSINESS_NAME;
 let PAID_KEY = "paid_" + CONFIG.BUSINESS_NAME;
 
@@ -173,53 +174,34 @@ firstUse = Date.now();
 localStorage.setItem(FIRST_USE_KEY, firstUse);
 }
 
-let daysPassed = Math.floor((Date.now() - firstUse) / (1000 * 60 * 60 * 24));
+let daysPassed = Math.floor((Date.now() - firstUse)/(1000*60*60*24));
 let daysLeft = 7 - daysPassed;
 
 let paid = localStorage.getItem(PAID_KEY);
 
-/* 🔐 LOCK LOGIC */
-if(paid === "yes"){
-lockScreen.style.display = "none";
-trialBadge.innerText = "✅ Paid Version";
-}
-else if(daysPassed >= 7){
-lockScreen.style.display = "flex";
-lockTitle.innerText = CONFIG.BUSINESS_NAME + " 🔒 Locked";
-}
-else{
-lockScreen.style.display = "none";
-trialBadge.innerText = "⏳ " + daysLeft + " day(s) left";
-}
-
-/* 🔓 UNLOCK */
-function unlockApp(){
-
-let currentDevice = localStorage.getItem("device_id");
-let LICENSE_USED_KEY = "license_used_" + CONFIG.BUSINESS_NAME;
-
-let usedDevices = JSON.parse(localStorage.getItem(LICENSE_USED_KEY) || "[]");
-
-if(!usedDevices.includes(currentDevice)){
-  if(usedDevices.length >= 2){
-    alert("❌ License already used on 2 devices");
-    return;
-  }
-  usedDevices.push(currentDevice);
-  localStorage.setItem(LICENSE_USED_KEY, JSON.stringify(usedDevices));
-}
-
-if(unlockCode.value === CONFIG.LICENSE_CODE){
-localStorage.setItem(PAID_KEY, "yes");
+if(paid==="yes"){
 lockScreen.style.display="none";
-trialBadge.innerText = "✅ Paid Version";
+trialBadge.innerText="✅ Paid Version";
+}else if(daysPassed>=7){
+lockScreen.style.display="flex";
+trialBadge.innerText="🔒 Locked";
+}else{
+lockScreen.style.display="none";
+trialBadge.innerText="⏳ "+daysLeft+" day(s) left";
+}
+
+/* UNLOCK */
+function unlockApp(){
+if(unlockCode.value===CONFIG.LICENSE_CODE){
+localStorage.setItem(PAID_KEY,"yes");
+lockScreen.style.display="none";
+trialBadge.innerText="✅ Paid Version";
 }else{
 alert("Invalid Code ❌");
 }
 }
 
-/* (ALL YOUR ORIGINAL LOGIC BELOW — UNCHANGED) */
-
+/* DATA */
 let tx = JSON.parse(localStorage.getItem("tx_"+CONFIG.BUSINESS_NAME)) || [];
 let products = JSON.parse(localStorage.getItem("products_"+CONFIG.BUSINESS_NAME)) || [];
 let opening = Number(localStorage.getItem("opening_"+CONFIG.BUSINESS_NAME)) || 0;
@@ -231,29 +213,34 @@ localStorage.setItem("opening_"+CONFIG.BUSINESS_NAME, opening);
 render();
 }
 
-function filterProducts(){
-let keyword = productSearch.value.toLowerCase();
-productSelect.innerHTML="";
-products.forEach((p,i)=>{
-if(p.name.toLowerCase().includes(keyword)){
-productSelect.innerHTML += `<option value="${i}">${p.name} (${p.stock})</option>`;
+/* FIXED STOCK REDUCTION */
+function addSale(){
+let p = products[productSelect.value];
+
+if(p){
+let stock = parseFloat(p.stock);
+if(!isNaN(stock)){
+if(stock<=0){
+alert("Out of stock ❌");
+return;
 }
-});
+p.stock = stock - 1;
+}
 }
 
-function addSale(){
-let selectedProduct = products[productSelect.value];
 tx.push({
 id:Date.now(),
 type:"SALE",
-name:saleDesc.value || selectedProduct?.name || "Sale",
+name:saleDesc.value || p?.name || "Sale",
 amount:+saleAmount.value
 });
+
 saleAmount.value="";
 saleDesc.value="";
 save();
 }
 
+/* OTHER LOGIC UNCHANGED */
 function addExpense(){
 tx.push({id:Date.now(),type:"EXPENSE",name:expDesc.value,amount:+expAmount.value});
 expAmount.value=""; expDesc.value="";
@@ -289,29 +276,28 @@ let p=products[productSelect.value];
 if(p) saleAmount.value=p.price;
 }
 
+/* FIXED EXCEL TOTALS */
+function exportExcel(){
+let rows=[["TYPE","NAME","AMOUNT"]];
+let s=0,e=0;
+
+tx.forEach(t=>{
+rows.push([t.type,t.name,t.amount]);
+t.type==="SALE"?s+=t.amount:e+=t.amount;
+});
+
+rows.push([]);
+rows.push(["TOTAL SALES","",s]);
+rows.push(["TOTAL EXPENSES","",e]);
+rows.push(["PROFIT","",s-e]);
+
+download(rows,"REPORT.csv");
+}
+
 function exportInventory(){
 let rows=[["Name","Price","Stock"]];
 products.forEach(p=>rows.push([p.name,p.price,p.stock]));
 download(rows,"Inventory.csv");
-}
-
-function closeDay(){
-let s=0,e=0,bal=opening;
-tx.forEach(t=>{
-t.type==="SALE"?(s+=t.amount,bal+=t.amount):(e+=t.amount,bal-=t.amount);
-});
-let choice=prompt(`Closing: ${bal}\n1 Carry\n2 Edit\n3 Zero`);
-if(choice=="1") opening=bal;
-else if(choice=="2") opening=+prompt("Enter opening",bal);
-else opening=0;
-tx=[];
-save();
-}
-
-function exportExcel(){
-let rows=[["TYPE","NAME","AMOUNT"]];
-tx.forEach(t=>rows.push([t.type,t.name,t.amount]));
-download(rows,"REPORT.csv");
 }
 
 function download(rows,name){
@@ -322,17 +308,47 @@ a.download=name;
 a.click();
 }
 
+function closeDay(){
+let s=0,e=0,bal=opening;
+tx.forEach(t=>{
+t.type==="SALE"?(s+=t.amount,bal+=t.amount):(e+=t.amount,bal-=t.amount);
+});
+
+let choice=prompt(`Closing: ${bal}\n1 Carry\n2 Edit\n3 Zero`);
+
+if(choice=="1") opening=bal;
+else if(choice=="2") opening=+prompt("Enter opening",bal);
+else opening=0;
+
+tx=[];
+save();
+}
+
+function filterProducts(){
+let k=productSearch.value.toLowerCase();
+productSelect.innerHTML="";
+products.forEach((p,i)=>{
+if(p.name.toLowerCase().includes(k)){
+productSelect.innerHTML+=`<option value="${i}">${p.name} (${p.stock})</option>`;
+}
+});
+}
+
 function render(){
 let s=0,e=0,bal=opening;
 let html="";
+
 productSelect.innerHTML="";
 products.forEach((p,i)=>{
 productSelect.innerHTML+=`<option value="${i}">${p.name} (${p.stock})</option>`;
 });
+
 tx.forEach(t=>{
 t.type==="SALE"?(s+=t.amount,bal+=t.amount):(e+=t.amount,bal-=t.amount);
+
 if(t.name.toLowerCase().includes(search.value.toLowerCase())){
-html+=`<div class="tx">
+html+=`
+<div class="tx">
 <div class="${t.type==='SALE'?'sale':'expense'}">
 ${t.type} - ${t.name} : KES ${t.amount}
 </div>
@@ -343,12 +359,14 @@ ${t.type} - ${t.name} : KES ${t.amount}
 </div>`;
 }
 });
+
 openingDisplay.innerText=opening;
 sales.innerText=s;
 expenses.innerText=e;
 profit.innerText=s-e;
 closing.innerText=bal;
 count.innerText=tx.length;
+
 list.innerHTML=html;
 }
 
