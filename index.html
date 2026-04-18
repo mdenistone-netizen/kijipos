@@ -135,14 +135,19 @@ lockTitle.innerText = CONFIG.BUSINESS_NAME;
 let device = localStorage.getItem("device_id") || Math.random().toString(36);
 localStorage.setItem("device_id", device);
 
-let allowed = localStorage.getItem("allowed_device");
+// Allow up to 2 devices
+let allowedDevices = JSON.parse(localStorage.getItem("allowed_devices") || "[]");
 
-if(!allowed){
-localStorage.setItem("allowed_device", device);
-}else if(allowed !== device){
-document.body.innerHTML="<h2>❌ Unauthorized Device</h2>";
+if(!allowedDevices.includes(device)){
+
+  if(allowedDevices.length < 2){
+    allowedDevices.push(device);
+    localStorage.setItem("allowed_devices", JSON.stringify(allowedDevices));
+  } else {
+    document.body.innerHTML = "<h2>❌ Only 2 devices allowed for this business</h2>";
+  }
+
 }
-
 // TRIAL KEYS
 let FIRST_USE_KEY = "first_use_" + CONFIG.BUSINESS_NAME;
 let PAID_KEY = "paid_" + CONFIG.BUSINESS_NAME;
