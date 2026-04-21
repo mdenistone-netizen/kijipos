@@ -1,664 +1,799 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>KijiPOS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KijiPOS - Easy Business System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-<style>
-body { font-family:Segoe UI; background:#f4f7fb; padding:15px;}
-.header{text-align:center;margin-bottom:10px;}
-.badge{position:fixed;top:10px;right:10px;background:#111827;color:white;padding:6px 10px;border-radius:20px;font-size:12px;}
-.card { background:white; padding:18px; border-radius:15px; margin-bottom:15px; box-shadow:0 6px 15px rgba(0,0,0,0.08);}
-.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px;}
-.box { background:#eef2ff; padding:10px; border-radius:10px; text-align:center;}
-input,select { width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #ccc;}
-button { padding:10px; margin-top:8px; width:100%; border:none; border-radius:10px; font-weight:bold; color:white;}
-.primary { background:linear-gradient(90deg,#4f46e5,#3b82f6);}
-.danger { background:#111827;}
-.edit { background:orange; width:auto;}
-.delete { background:red; width:auto;}
-.tx { border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; flex-wrap:wrap;}
-.sale { color:green; font-weight:bold;}
-.expense { color:red; font-weight:bold;}
+    <style>
+        :root { --primary: #4f46e5; --secondary: #3b82f6; --dark: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; --border: #e2e8f0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1e293b; line-height: 1.5; }
+        
+        /* 💎 DASHBOARD */
+        .header { text-align: center; padding: 15px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+        .badge { position: fixed; top: 15px; right: 15px; background: var(--dark); color: white; padding: 6px 12px; border-radius: 20px; font-size: 10px; z-index: 100; font-weight: 700; text-transform: uppercase; }
+        
+        .dash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .dash-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid var(--border); text-align: center; }
+        .dash-card small { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .dash-card div { font-size: 18px; font-weight: 800; color: var(--dark); margin-top: 4px; }
+        .main-card { grid-column: span 2; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; }
+        .main-card div { color: white; font-size: 26px; }
+        .main-card small { color: rgba(255,255,255,0.8); }
 
-footer{
-text-align:center;
-margin-top:20px;
-font-size:12px;
-color:gray;
-}
-</style>
+        /* 📋 UI COMPONENTS */
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
+        h3 { margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; color: var(--dark); letter-spacing: 0.5px; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
+        
+        input, select { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; font-size: 14px; outline: none; transition: 0.2s; background: #fdfdfd; }
+        input:focus, select:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
+        .btn { padding: 14px; margin-top: 10px; width: 100%; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-dark { background: var(--dark); color: white; }
+        .btn-outline { background: #f8fafc; color: var(--dark); border: 1px solid var(--border); }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn:active { transform: translateY(1px); }
+
+        /* 📜 SCROLLABLE AREAS */
+        .scroll-area { max-height: 350px; overflow-y: auto; padding-right: 5px; margin-top: 10px; }
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .scroll-area::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* 📊 DATA TABLES & LISTS */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8fafc; text-align: left; padding: 12px; color: #64748b; font-weight: 600; position: sticky; top: 0; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        
+        .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f1f5f9; }
+        .tx-info b { display: block; font-size: 14px; color: #0f172a; }
+        .tx-info small { color: #64748b; font-size: 12px; display: block; margin-top: 2px; }
+        .amt-sale { color: var(--success); font-weight: 800; font-size: 15px; }
+        .amt-exp { color: var(--danger); font-weight: 800; font-size: 15px; }
+        
+        .action-btns { margin-top: 6px; display: flex; gap: 8px; justify-content: flex-end; }
+        .action-btn { background: transparent; border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-edit { color: var(--primary); border-color: #c7d2fe; background: #eef2ff; }
+        .btn-del { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
+
+        /* 🔐 SCREENS */
+        #lockScreen, #adminPanel {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark); color: white; z-index: 1000; padding: 30px;
+            flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; text-align: center;
+        }
+        footer { text-align: center; padding: 30px; font-size: 12px; color: #94a3b8; font-weight: 500; }
+
+        /* Admin Table Styles */
+        .admin-table { width: 100%; background: white; color: black; font-size: 12px; margin-top: 15px; border-radius: 8px; overflow: hidden; }
+        .admin-table th, .admin-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .admin-btn { padding: 4px 8px; font-size: 11px; margin: 2px; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
 </head>
 
 <body>
 
-<!-- 🔖 Trial Badge -->
-<div class="badge" id="trialBadge"></div>
 
-<!-- 🟣 HEADER -->
+
 <div class="header">
-  <h1 style="margin:0;color:#4f46e5;">KijiPOS</h1>
+    <h1 style="margin:0; font-size: 26px; letter-spacing: -1px; font-weight: 800;">Kiji<span style="color:var(--primary)">POS</span></h1>
+    <p id="bizNameDisplay" style="margin: 2px 0; color: #64748b; font-size: 13px; font-weight: 600;"></p>
+</div>
+<div class="badge" id="statusBadge">Checking System</div>
+
+<div id="lockScreen">
+    <h2>System Locked</h2>
+    <p style="opacity: 0.8; font-size: 14px;">Your access has expired or is blocked.<br>Contact support to unlock your system.</p>
+    <p style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 20px 0;"><b>WhatsApp: 0768 675 139</b></p>
+    <input id="unlockCode" placeholder="Enter Unlock Key" style="max-width: 300px; text-align: center;">
+    <button class="btn btn-primary" onclick="verifyLicenseCode()" style="max-width: 300px;">Unlock System</button>
 </div>
 
-<!-- 🏷️ BUSINESS NAME -->
-<h2 id="bizName" style="text-align:center;"></h2>
-
-<!-- 🔒 LOCK SCREEN (HIDDEN UNTIL TRIAL EXPIRES) -->
-<div id="lockScreen" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:#111827;
-color:white;
-align-items:center;
-justify-content:center;
-flex-direction:column;
-z-index:999;
-text-align:center;
-padding:20px;
-">
-
-  <h2 id="lockTitle"></h2>
-
-  <p>
-    🔒 Trial Expired / Locked<br><br>
-    Call/WhatsApp: 0768675139<br>
-    Unlock fee: KES 7000
-  </p>
-
-  <input id="unlockCode" placeholder="License Code" style="margin-top:10px;">
-
-  <button class="primary" onclick="unlockApp()">Unlock</button>
-
+<div class="dash-grid">
+    <div class="dash-card main-card">
+        <small>Today's Net Profit</small>
+        <div id="profit">0</div>
+    </div>
+    <div class="dash-card">
+        <small>Opening Cash</small>
+        <div id="openingDisplay">0</div>
+    </div>
+    <div class="dash-card">
+        <small>Total Sales</small>
+        <div id="sales">0</div>
+    </div>
+    <div class="dash-card">
+        <small>Total Expenses</small>
+        <div id="expenses">0</div>
+    </div>
+    <div class="dash-card">
+        <small>Cash in Drawer</small>
+        <div id="closingDisplay">0</div>
+    </div>
 </div>
-
-<!-- 📊 MAIN APP CONTENT STARTS HERE -->
 
 <div class="card">
-  <h3>Dashboard</h3>
-  <div class="grid">
-    <div class="box">Opening<br><span id="openingDisplay">0</span></div>
-    <div class="box">Sales<br><span id="sales">0</span></div>
-    <div class="box">Expenses<br><span id="expenses">0</span></div>
-    <div class="box">Profit<br><span id="profit">0</span></div>
-    <div class="box">Closing<br><span id="closing">0</span></div>
-    <div class="box">Transactions<br><span id="count">0</span></div>
-  </div>
+    <h3>Make a Sale / Add Expense</h3>
+    <input id="productSearch" placeholder="🔍 Search Items..." onkeyup="instantSearch()">
+    <select id="productSelect" onchange="fillPrice()">
+        <option value="">-- Type Manually or Pick an Item --</option>
+    </select>
+    <div style="display:flex; gap:10px;">
+        <input id="saleAmount" type="number" placeholder="Price (KES)" style="flex: 2;">
+        <input id="saleQty" type="number" value="1" placeholder="Quantity" style="flex: 1;">
+    </div>
+    <input id="saleDesc" placeholder="Item Name or Details">
+    
+    <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="addSale()" style="flex: 2;">Cash Sale</button>
+        <button class="btn btn-warning" onclick="addInstallment()" style="flex: 1;">Installment (Pay Later)</button>
+    </div>
+    <button class="btn btn-dark" onclick="addExpense()" style="margin-top: 10px;">Log an Expense</button>
 </div>
 
-<!-- ➕ ADD SALE -->
 <div class="card">
-  <h3>Add Sale</h3>
+    <h3>Manage Items (Stock)</h3>
+    <div style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border);">
+        <input id="pName" placeholder="Item Name" style="background: white; margin-top: 0;">
+        <div style="display:flex; gap:10px;">
+            <input id="pPrice" type="number" placeholder="Selling Price" style="background: white;">
+            <input id="pCost" type="number" placeholder="Buying Price (Cost)" style="background: white;">
+        </div>
+        <input id="pStock" type="number" placeholder="How many in stock?" style="background: white;">
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" onclick="addProduct()">Add New Item</button>
+            <button class="btn btn-outline" onclick="updateProduct()">Update Existing</button>
+        </div>
+    </div>
 
-  <input id="productSearch" placeholder="Search product..." onkeyup="filterProducts()">
-
-  <select id="productSelect" onchange="fillPrice(); loadProductToForm();"></select>
-
-  <input id="saleAmount" type="number" placeholder="Amount">
-  <input id="saleDesc" placeholder="Product / Service">
-
-  <button class="primary" onclick="addSale()">Save Sale</button>
+    <div class="scroll-area" style="border: 1px solid var(--border); border-radius: 8px;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryBody"></tbody>
+        </table>
+    </div>
 </div>
 
-<!-- ➖ ADD EXPENSE -->
 <div class="card">
-  <h3>Add Expense</h3>
-  <input id="expAmount" type="number" placeholder="Amount">
-  <input id="expDesc" placeholder="Expense name">
-  <button class="primary" onclick="addExpense()">Save Expense</button>
+    <h3>Today's Transactions</h3>
+    <input id="searchTx" placeholder="Search sales or expenses..." onkeyup="render()">
+    <div id="list" class="scroll-area"></div>
 </div>
 
-<!-- 📦 INVENTORY -->
 <div class="card">
-  <h3>📦 Inventory</h3>
-
-  <input id="pName" placeholder="Product name">
-  <input id="pPrice" type="number" placeholder="Selling Price">
-  <input id="pCost" type="number" placeholder="Buying Price">
-  <input id="pStock" placeholder="Stock">
-
-  <button class="primary" onclick="addProduct()">Add Product</button>
-  <button class="primary" onclick="updateProduct()">Update Product</button>
-  <button class="primary" onclick="exportInventory()">Download Inventory</button>
-  <button class="primary" onclick="exportProfitReport()">📊 Product Profit Report</button>
-
-  <p id="msg"></p>
+    <h3>Download Reports</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <button class="btn btn-outline" onclick="exportExcel()">Daily Report</button>
+        <button class="btn btn-outline" onclick="weeklyReport()">Weekly Report</button>
+    </div>
+    <button class="btn btn-outline" style="background:#fef2f2; color:#b91c1c;" onclick="exportDebtReport()">
+    Download Debt Report (Who Owes Me)
+</button>
+    <button class="btn btn-primary" style="background:#059669" onclick="exportProfitReport()">Download Profit Report</button>
+    <button class="btn btn-dark" onclick="closeDay()" style="margin-top: 25px;">🌙 Close the Day</button>
 </div>
 
-<!-- 📄 TRANSACTIONS -->
-<div class="card">
-  <h3>Transactions</h3>
-  <input id="search" placeholder="Search..." onkeyup="render()">
-  <div id="list"></div>
-</div>
+<button class="btn btn-outline" onclick="openAdmin()" style="margin-bottom: 40px; border-style: dashed;">Admin Settings</button>
 
-<!-- 📊 REPORTS -->
-<div class="card">
-  <button class="primary" onclick="exportExcel()">Download Report</button>
-  <button class="primary" onclick="weeklyReport()">📅 Weekly Report</button>
-  <button class="danger" onclick="closeDay()">Close Day</button>
-</div>
-
-<!-- 🧾 FOOTER -->
-<footer style="text-align:center;margin-top:20px;font-size:12px;color:gray;">
-  Built by Denistone Muiruri • KijiPOS • Smart Business Solutions
+<footer>
+    Built by Denistone Muiruri<br>KijiPOS Edition v3.1
 </footer>
 
-</body>
+<div id="adminPanel">
+    <h3>Admin Dashboard</h3>
+    <div id="adminAuth">
+        <input id="adminPass" type="password" placeholder="Enter Admin Password" style="color: black;">
+        <button class="btn btn-primary" onclick="verifyAdmin()">Login</button>
+    </div>
+    <div id="adminTools" style="display:none; width: 100%; max-width: 600px;">
+        <p style="font-size: 14px; margin-bottom: 5px;">All Connected Clients:</p>
+        <div id="adminClientList" style="max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; padding: 5px;">
+            </div>
+    </div>
+    <button class="btn btn-outline" style="color:white; border-color:white;" onclick="closeAdmin()" style="margin-top:20px;">Exit Admin</button>
+</div>
 
 <script>
+// --- SYSTEM CONFIGURATION ---
+const CONFIG = { BUSINESS_NAME: "Karen hair and salon", LICENSE_CODE: "SALON-2847-KAREN" };
+const firebaseConfig = { apiKey: "AIzaSyDiiYaJ5El37ki4Y4STZZLC5fjgP4ZyWq8", authDomain: "kijipos.firebaseapp.com", projectId: "kijipos" };
 
-// =========================
-// 🔧 CONFIGURATION
-// =========================
-const CONFIG = {
-BUSINESS_NAME: "Karen hair and salon",
-LICENSE_CODE: "SALON-2847-KAREN"
-};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-// =========================
-// 🏷️ UI BINDING (SAFE ONCE)
-// =========================
-bizName.innerText = "📊 " + CONFIG.BUSINESS_NAME;
-lockTitle.innerText = CONFIG.BUSINESS_NAME;
+let deviceId = localStorage.getItem("kjp_pro_id") || ('KJP-' + Math.random().toString(36).substring(2, 7).toUpperCase());
+localStorage.setItem("kjp_pro_id", deviceId);
 
-// =========================
-// 🔒 LICENSE / TRIAL KEYS
-// =========================
-let FIRST_USE_KEY = "first_use_" + CONFIG.BUSINESS_NAME;
-let PAID_KEY = "paid_" + CONFIG.BUSINESS_NAME;
-
-// =========================
-// 📱 DEVICE SYSTEM KEYS
-// =========================
-let DEVICE_KEY = "device_id_" + CONFIG.BUSINESS_NAME;
-let ALLOWED_KEY = "allowed_devices_" + CONFIG.BUSINESS_NAME;
-
-// =========================
-// 📱 DEVICE IDENTIFICATION
-// =========================
-let device = localStorage.getItem(DEVICE_KEY);
-
-if(!device){
-device = Math.random().toString(36).substring(2);
-localStorage.setItem(DEVICE_KEY, device);
-}
-
-// =========================
-// 📱 DEVICE LIMIT CHECK (2 DEVICES MAX)
-// =========================
-let allowedDevices = JSON.parse(localStorage.getItem(ALLOWED_KEY) || "[]");
-
-if(!allowedDevices.includes(device)){
-
-if(allowedDevices.length < 2){
-allowedDevices.push(device);
-localStorage.setItem(ALLOWED_KEY, JSON.stringify(allowedDevices));
-}
-else{
-document.body.innerHTML = `
-<div style="text-align:center;padding:40px;font-family:Arial">
-<h2>❌ Access Denied</h2>
-<p>This business license is already active on 2 devices.</p>
-<p>Contact admin to reset devices.</p>
-</div>`;
-}
-}
-// FIRST TIME SETUP
-let firstUse = localStorage.getItem(FIRST_USE_KEY);
-
-if(!firstUse){
-firstUse = Date.now();
-localStorage.setItem(FIRST_USE_KEY, firstUse);
-}
-function unlockApp(){
-
-let code = unlockCode.value.trim().toUpperCase();
-
-if(code === CONFIG.LICENSE_CODE){
-
-localStorage.setItem(PAID_KEY, "yes");
-
-if(lockScreen){
-lockScreen.style.display = "none";
-}
-
-trialBadge.innerText = "✅ Activated";
-
-alert("License activated successfully");
-
-}else{
-
-alert("Invalid License Code ❌");
-
-}
-}
-
-// CALCULATE DAYS
-let now = Date.now();
-let daysPassed = Math.floor((now - firstUse)/(1000*60*60*24));
-let daysLeft = 7 - daysPassed;
-
-let paid = localStorage.getItem(PAID_KEY);
-
-// LOCK SCREEN ELEMENT (CREATE IF NOT EXISTS)
-let lockScreen = document.getElementById("lockScreen");
-
-// TRIAL LOGIC
-if(paid === "yes"){
-if(lockScreen) lockScreen.style.display = "none";
-}
-else if(daysPassed >= 7){
-if(lockScreen) lockScreen.style.display = "flex";
-}
-else{
-if(lockScreen) lockScreen.style.display = "none";
-}
-// DATA
+// State Variables
 let tx = JSON.parse(localStorage.getItem("tx_"+CONFIG.BUSINESS_NAME)) || [];
 let products = JSON.parse(localStorage.getItem("products_"+CONFIG.BUSINESS_NAME)) || [];
 let opening = Number(localStorage.getItem("opening_"+CONFIG.BUSINESS_NAME)) || 0;
 
-function save(){
-localStorage.setItem("tx_"+CONFIG.BUSINESS_NAME, JSON.stringify(tx));
-localStorage.setItem("products_"+CONFIG.BUSINESS_NAME, JSON.stringify(products));
-localStorage.setItem("opening_"+CONFIG.BUSINESS_NAME, opening);
-render();
+document.getElementById("bizNameDisplay").innerText = "Branch: " + CONFIG.BUSINESS_NAME;
+window.onload = function() {
+    let role = localStorage.getItem("user_role");
+    
+    // First time setup
+    if (!role) {
+        let isOwner = confirm("Welcome to KIJIPOS! Are you the OWNER?\n\n(Click OK for Owner, Cancel for Staff)");
+        role = isOwner ? "owner" : "employee";
+        localStorage.setItem("user_role", role);
+        if(isOwner) {
+            let p = prompt("Enter your WhatsApp Number to receive reports (e.g. 254711223344):");
+            localStorage.setItem("owner_phone", p || "");
+        }
+    }
+
+    // Apply Permissions
+    if (role === "employee") {
+        document.getElementById("statusBadge").innerText = "STAFF MODE";
+        let style = document.createElement('style');
+        style.innerHTML = `
+            .btn-del { display: none !important; } 
+            button[onclick="openAdmin()"] { display: none !important; }
+        `;
+        document.head.appendChild(style);
+    } else {
+        document.getElementById("statusBadge").innerText = "OWNER MODE";
+    }
+    render();
+};
+// --- DATA MANAGEMENT ---
+function save() {
+    localStorage.setItem("tx_"+CONFIG.BUSINESS_NAME, JSON.stringify(tx));
+    localStorage.setItem("products_"+CONFIG.BUSINESS_NAME, JSON.stringify(products));
+    localStorage.setItem("opening_"+CONFIG.BUSINESS_NAME, opening);
+    render();
+    if(navigator.onLine) backup();
 }
 
-// AUTO PRICE (for sales)
-function fillPrice(){
-
-let p = products[productSelect.value];
-
-if(p){
-saleAmount.value = p.price || "";
-saleDesc.value = p.name || "";
+async function backup() {
+    try { await db.collection("clients").doc(deviceId).update({ tx, products, opening, lastSync: Date.now() }, {merge: true}); } catch(e) {}
 }
 
+// --- POINT OF SALE ENGINE ---
+function instantSearch() {
+    let kw = document.getElementById("productSearch").value.toLowerCase().trim();
+    if(kw === "") return;
+    let idx = products.findIndex(p => p.name.toLowerCase().includes(kw));
+    if(idx !== -1) {
+        document.getElementById("productSelect").value = idx;
+        fillPrice();
+    }
 }
 
-
-// LOAD PRODUCT INTO INVENTORY FORM (for editing)
-function loadProductToForm(){
-
-let p = products[productSelect.value];
-
-if(p){
-pName.value = p.name;
-pPrice.value = p.price;
-pCost.value = p.buy;
-pStock.value = p.stock;
+function fillPrice() {
+    let idx = document.getElementById("productSelect").value;
+    if(idx === "") return;
+    let p = products[idx];
+    document.getElementById("saleAmount").value = p.price;
+    document.getElementById("saleDesc").value = p.name;
+    // Auto-fill inventory inputs for easy updates
+    document.getElementById("pName").value = p.name;
+    document.getElementById("pPrice").value = p.price;
+    document.getElementById("pCost").value = p.buy || 0;
+    document.getElementById("pStock").value = p.stock;
 }
 
+function addSale() {
+    let unitPrice = Number(document.getElementById("saleAmount").value);
+    let qty = Number(document.getElementById("saleQty").value) || 1;
+    let desc = document.getElementById("saleDesc").value.trim();
+    
+    if(!unitPrice || !desc) return alert("Please enter the Price and Item Name.");
+
+    let totalSale = unitPrice * qty;
+    let totalProfit = 0;
+    
+    let idx = products.findIndex(p => p.name.toLowerCase() === desc.toLowerCase());
+    if(idx !== -1) {
+        let p = products[idx];
+        totalProfit = (unitPrice - (Number(p.buy) || 0)) * qty;
+        if(Number(p.stock) > 0) p.stock = Number(p.stock) - qty;
+        p.sold = (Number(p.sold) || 0) + qty;
+    }
+    
+    tx.push({ id: Date.now(), type: "SALE", name: desc, amount: totalSale, qty: qty, unitPrice: unitPrice, profit: totalProfit });
+    
+    // Clear Fields
+    clearSaleInputs();
+    save();
 }
 
-// ADD SALE
-function addSale(){
+function addInstallment() {
+    let unitPrice = Number(document.getElementById("saleAmount").value);
+    let qty = Number(document.getElementById("saleQty").value) || 1;
+    let desc = document.getElementById("saleDesc").value.trim();
+    
+    if(!unitPrice || !desc) return alert("Please enter Price and Item.");
 
-if(productSelect.value === ""){
-alert("Select product");
-return;
+    let totalSale = unitPrice * qty;
+    let amountPaid = Number(prompt(`Total bill: KES ${totalSale}. Amount paid now?`, "0"));
+    
+    // Safety check: if user hits cancel on the first prompt, stop execution
+    if(amountPaid === null) return; 
+
+    let customerName = prompt("Customer Name:");
+    let customerPhone = prompt("Customer Phone Number:");
+    
+    let balanceOwed = totalSale - amountPaid;
+    let totalProfit = 0;
+
+    // --- STOCK REDUCTION & PROFIT LOGIC ---
+    let idx = products.findIndex(p => p.name.toLowerCase() === desc.toLowerCase());
+    if(idx !== -1) {
+        let p = products[idx];
+        
+        // Calculate profit (Price sold - Buying price)
+        totalProfit = (unitPrice - (Number(p.buy) || 0)) * qty;
+        
+        // Reduce the physical stock
+        if(Number(p.stock) >= qty) {
+            p.stock = Number(p.stock) - qty;
+        } else {
+            alert("Warning: Selling more than what is in stock!");
+            p.stock = Number(p.stock) - qty; 
+        }
+        
+        // Update total units sold record
+        p.sold = (Number(p.sold) || 0) + qty;
+    }
+    
+    // --- RECORD THE TRANSACTION ---
+    tx.push({ 
+        id: Date.now(), 
+        type: "INSTALLMENT", 
+        name: `${desc} (Debt: ${customerName})`, 
+        amount: amountPaid, 
+        balance: balanceOwed,
+        customer: customerName,
+        phone: customerPhone,
+        qty: qty,
+        unitPrice: unitPrice,
+        profit: totalProfit,
+        date: new Date().toLocaleDateString()
+    });
+    
+    // --- UI CLEANUP ---
+    // Clears the boxes so they are ready for the next customer
+    document.getElementById("saleAmount").value = "";
+    document.getElementById("saleDesc").value = "";
+    document.getElementById("productSearch").value = "";
+    document.getElementById("productSelect").value = "";
+    
+    // Save to LocalStorage and update the dashboard
+    save(); 
+    alert("Installment recorded successfully! Stock has been updated.");
+}
+function exportDebtReport() {
+    let rows = [["Date", "Customer Name", "Phone Number", "Item Purchased", "Balance Owed (KES)"]];
+    let totalUnpaid = 0;
+
+    tx.forEach(t => {
+        if(t.type === "INSTALLMENT" && t.balance > 0) {
+            rows.push([t.date, t.customer, t.phone, t.name, t.balance]);
+            totalUnpaid += t.balance;
+        }
+    });
+
+    rows.push([], ["TOTAL DEBTS OWED", "", "", "", totalUnpaid]);
+    downloadCSV(rows, "Customer_Debt_Report.csv");
 }
 
-if(!saleAmount.value){
-alert("Enter amount");
-return;
+function addExpense() {
+    let amt = Number(document.getElementById("saleAmount").value);
+    let desc = document.getElementById("saleDesc").value.trim();
+    if(!amt || !desc) return alert("Please enter an Amount and Description for this expense.");
+    tx.push({ id: Date.now(), type: "EXPENSE", name: desc, amount: amt, qty: 1, unitPrice: amt, profit: 0 });
+    
+    clearSaleInputs();
+    save();
 }
 
-let p = products[productSelect.value];
-
-if(!p){
-alert("Invalid product");
-return;
+function clearSaleInputs() {
+    document.getElementById("saleAmount").value = "";
+    document.getElementById("saleQty").value = 1;
+    document.getElementById("saleDesc").value = "";
+    document.getElementById("productSearch").value = "";
+    document.getElementById("productSelect").value = "";
 }
 
-// =========================
-// 🧠 PROFIT PER UNIT (IMPORTANT FOR REPORT)
-// =========================
-let profitPerUnit = (Number(p.price) || 0) - (Number(p.buy) || 0);
+// --- INVENTORY ENGINE ---
+function addProduct() {
+    let name = document.getElementById("pName").value.trim();
+    let price = Number(document.getElementById("pPrice").value);
+    let cost = Number(document.getElementById("pCost").value);
+    let stock = Number(document.getElementById("pStock").value);
+    
+    if(!name || !price) return alert("Item Name and Selling Price are required.");
+    
+    let exists = products.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+    if(exists !== -1) return alert("Item already exists. Use 'Update Existing' instead.");
 
-// =========================
-// 📦 STOCK HANDLING
-// =========================
-let stock = parseFloat(p.stock) || 0;
-
-if(stock <= 0){
-alert("Out of stock");
-return;
+    products.push({ name, price, buy: cost, stock, sold: 0 });
+    
+    clearInventoryInputs();
+    save();
 }
 
-stock -= 1;
-
-// preserve unit (kg, pcs, litres)
-let unit = p.stock.toString().replace(/[0-9.]/g,"").trim();
-p.stock = unit ? stock + " " + unit : stock;
-
-// =========================
-// 📊 SOLD TRACKING
-// =========================
-p.sold = (p.sold || 0) + 1;
-
-// =========================
-// 💰 TRANSACTION
-// =========================
-tx.push({
-id: Date.now(),
-type: "SALE",
-name: saleDesc.value || p.name,
-amount: +saleAmount.value,
-
-// 🔥 IMPORTANT: store BOTH for reports
-profitPerUnit: profitPerUnit,
-profit: profitPerUnit
-});
-
-// =========================
-// 🧹 CLEAR INPUTS
-// =========================
-productSelect.value = "";
-saleAmount.value = "";
-saleDesc.value = "";
-
-save();
+function updateProduct() {
+    let name = document.getElementById("pName").value.trim();
+    let idx = products.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+    if(idx === -1) return alert("Item not found. The name must match exactly to update.");
+    
+    products[idx].price = Number(document.getElementById("pPrice").value);
+    products[idx].buy = Number(document.getElementById("pCost").value);
+    products[idx].stock = Number(document.getElementById("pStock").value);
+    
+    clearInventoryInputs();
+    save();
+    alert("Item updated successfully.");
 }
 
-// EXPENSE
-function addExpense(){
-tx.push({id:Date.now(),type:"EXPENSE",name:expDesc.value,amount:+expAmount.value});
-expAmount.value=""; expDesc.value="";
-save();
+function clearInventoryInputs() {
+    document.getElementById("pName").value = "";
+    document.getElementById("pPrice").value = "";
+    document.getElementById("pCost").value = "";
+    document.getElementById("pStock").value = "";
 }
 
-// PRODUCT
-function addProduct(){
+// --- DISPLAY ENGINE ---
+function render() {
+    let s = 0, e = 0, p = 0, filter = document.getElementById("searchTx").value.toLowerCase();
+    let txHtml = "", prodHtml = "", dropHtml = '<option value="">-- Type Manually or Pick an Item --</option>';
 
-if(products.find(p => p.name.toLowerCase() === pName.value.toLowerCase())){
-msg.innerText="❌ Exists";
-return;
+    // Build Transaction List
+    tx.forEach(t => {
+        // Installments bring in cash, so they count towards sales/cash
+        if(t.type === "SALE" || t.type === "INSTALLMENT") { s += t.amount; p += (t.profit || 0); } else { e += t.amount; }
+        
+        if(t.name.toLowerCase().includes(filter)) {
+            let timeStr = new Date(t.id).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            let typeLabel = t.type === 'SALE' ? 'Sale' : (t.type === 'INSTALLMENT' ? 'Installment Paid' : 'Expense');
+            let amtClass = (t.type === 'SALE' || t.type === 'INSTALLMENT') ? 'amt-sale' : 'amt-exp';
+            let sign = (t.type === 'SALE' || t.type === 'INSTALLMENT') ? '+' : '-';
+            
+            txHtml += `
+            <div class="tx-item">
+                <div class="tx-info">
+                    <b>${t.name}</b>
+                    <small>${typeLabel} | Qty: ${t.qty || 1} | Time: ${timeStr}</small>
+                </div>
+                <div style="text-align:right">
+                    <div class="${amtClass}">${sign} KES ${t.amount}</div>
+                    <div class="action-btns">
+                        <button class="action-btn btn-edit" onclick="editTx(${t.id})">Edit</button>
+                        <button class="action-btn btn-del" onclick="deleteTx(${t.id})">Delete</button>
+                    </div>
+                </div>
+            </div>`;
+        }
+    });
+
+    // Build Inventory List
+    products.forEach((pd, i) => {
+        let stockColor = pd.stock <= 5 ? 'color: var(--danger); font-weight: bold;' : '';
+        prodHtml += `<tr><td>${pd.name}</td><td>${pd.price}</td><td style="${stockColor}">${pd.stock}</td></tr>`;
+        dropHtml += `<option value="${i}">${pd.name} (Stock: ${pd.stock})</option>`;
+    });
+
+    // Update Dashboard Math
+    document.getElementById("openingDisplay").innerText = "KES " + opening;
+    document.getElementById("sales").innerText = "KES " + s;
+    document.getElementById("expenses").innerText = "KES " + e;
+    document.getElementById("profit").innerText = "KES " + p;
+    document.getElementById("closingDisplay").innerText = "KES " + (opening + s - e);
+    
+    // Inject HTML
+    document.getElementById("list").innerHTML = txHtml || '<p style="text-align:center; color:#94a3b8; font-size:13px; padding: 20px;">No transactions today.</p>';
+    document.getElementById("inventoryBody").innerHTML = prodHtml || '<tr><td colspan="3" style="text-align:center;">No items added yet.</td></tr>';
+    document.getElementById("productSelect").innerHTML = dropHtml;
 }
 
-products.push({
-name: pName.value,
-price: +pPrice.value,
-buy: +pCost.value || 0,
-stock: pStock.value,
-sold: 0
-});
-
-msg.innerText="✅ Added";
-
-pName.value = "";
-pPrice.value = "";
-pStock.value = "";
-
-save();
+function editTx(id) {
+    let t = tx.find(x => x.id === id);
+    if(!t) return;
+    
+    // 1. Prompt for Description (Item Name)
+    let newName = prompt(`Editing Transaction\n\nCurrent Description: ${t.name}\n\nEnter correct description:`, t.name);
+    
+    // 2. Prompt for Amount
+    // We check for null to allow the user to cancel the whole process
+    if(newName !== null) {
+        let newAmt = prompt(`Editing: ${newName}\n\nCurrent Amount: KES ${t.amount}\n\nEnter correct TOTAL AMOUNT paid (KES):`, t.amount);
+        
+        if(newAmt !== null && newAmt !== "") {
+            t.name = newName;
+            t.amount = Number(newAmt);
+            
+            save(); // Updates LocalStorage
+            render(); // Refreshes the UI table
+            alert("Record updated successfully.");
+        }
+    }
 }
 
-function updateProduct(){
-let selected = productSelect.value;
-if(selected===""){ alert("Select product"); return;}
-
-let p = products[selected];
-p.price = +pPrice.value || p.price;
-p.buy = +pCost.value || p.buy;
-p.stock = pStock.value || p.stock;
-
-msg.innerText="✅ Updated";
-save();
+function deleteTx(id) { 
+    if(confirm("Are you sure you want to delete this record?")) { 
+        tx = tx.filter(t => t.id !== id); 
+        save(); 
+    } 
 }
 
-// EXPORT FULL REPORT
-function exportExcel(){
+// --- CLOSE THE DAY ---
+function closeDay() {
+    let s = 0, e = 0;
+    // Calculate daily totals
+    tx.forEach(t => {
+        (t.type === "SALE" || t.type === "INSTALLMENT") ? s += t.amount : e += t.amount;
+    });
+    
+    let expectedCash = opening + s - e;
+    let phone = localStorage.getItem("owner_phone");
 
-let rows=[["TYPE","NAME","AMOUNT"]];
-let s=0,e=0;
+    // 1. WhatsApp Report Preparation
+    let msg = `*DAILY CASH REPORT: ${CONFIG.BUSINESS_NAME}*%0A` +
+              `----------------------------%0A` +
+              `Sales & Cash In: KES ${s}%0A` +
+              `Total Expenses: KES ${e}%0A` +
+              `----------------------------%0A` +
+              `*EXPECTED CASH IN DRAWER:* KES ${expectedCash}`;
 
-tx.forEach(t=>{
-rows.push([t.type,t.name,t.amount]);
-t.type==="SALE"?s+=t.amount:e+=t.amount;
-});
+    // 2. Ask to send the report first
+    if(confirm(`CLOSING DAY\nTotal Sales: KES ${s}\nExpenses: KES ${e}\nExpected Cash: KES ${expectedCash}\n\nSend WhatsApp report to Owner?`)) {
+        if(phone) {
+            window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+        } else {
+            alert("Owner phone not set. Report not sent via WhatsApp.");
+        }
+    }
 
-rows.push([]);
-rows.push(["TOTAL SALES","",s]);
-rows.push(["TOTAL EXPENSES","",e]);
-rows.push(["PROFIT","",s-e]);
+    // 3. Cash Management Logic (Where does the money go?)
+    let action = prompt(
+        `CASH MANAGEMENT\n` +
+        `1 : Keep KES ${expectedCash} in the drawer (Start at this tomorrow)\n` +
+        `2 : Enter a different opening cash amount\n` +
+        `3 : Empty the drawer (Start at 0 tomorrow)`, 
+        "1"
+    );
 
-download(rows,"Full_Report.csv");
+    if (action === "1") {
+        opening = expectedCash;
+    } else if (action === "2") {
+        opening = Number(prompt("Enter the exact cash you are leaving in the drawer (KES):", expectedCash)) || 0;
+    } else if (action === "3") {
+        opening = 0;
+    } else {
+        return; // User cancelled the process entirely
+    }
+
+    // 4. Finalize and Save
+    exportExcel(); // Downloads your backup excel
+    tx = []; // Clears today's sales records
+    save(); // Saves to local storage
+    
+    alert("Day closed successfully. Ready for tomorrow.");
+    location.reload(); // Refresh to update opening balance on screen
 }
 
-// WEEKLY REPORT (NEW)
-function weeklyReport(){
-
-let weekAgo = Date.now() - (7*24*60*60*1000);
-
-let rows=[["DATE","TYPE","NAME","AMOUNT"]];
-let s=0,e=0;
-
-tx.forEach(t=>{
-if(t.id>=weekAgo){
-let date = new Date(t.id).toLocaleDateString();
-rows.push([date,t.type,t.name,t.amount]);
-t.type==="SALE"?s+=t.amount:e+=t.amount;
-}
-});
-
-rows.push([]);
-rows.push(["","","WEEK SALES",s]);
-rows.push(["","","WEEK EXPENSES",e]);
-rows.push(["","","WEEK PROFIT",s-e]);
-
-download(rows,"Weekly_Report.csv");
+// --- REPORTS ---
+function exportExcel() {
+    let s=0, e=0;
+    let rows = [["Type", "Item Details", "Quantity", "Cash Received / Spent"]];
+    tx.forEach(t => { 
+        rows.push([t.type, t.name, t.qty || 1, t.amount]); 
+        if(t.type === "SALE" || t.type === "INSTALLMENT") s += t.amount; else e += t.amount; 
+    });
+    rows.push([], ["TOTAL CASH IN", "", "", s], ["TOTAL EXPENSES", "", "", e], ["NET CASH TODAY", "", "", s - e]);
+    downloadCSV(rows, "Daily_Report.csv");
 }
 
-// PRODUCT PROFIT REPORT (IMPROVED)
-function exportProfitReport(){
+function weeklyReport() {
+    let s = 0, p = 0, d = 0;
+    let rows = [["Date", "Time", "Type", "Item", "Cash Amount", "Balance Owed", "Profit"]];
+    let dailyProfits = {};
 
-let rows = [
-["Product","Buying Price","Selling Price","Qty Sold","Profit/Unit","Total Profit"]
-];
+    // 1. Process Data for both WhatsApp and CSV
+    tx.forEach(t => {
+        let dateObj = new Date(t.id);
+        let dateStr = dateObj.toLocaleDateString();
+        let profit = t.profit || 0;
+        let amt = t.amount || 0;
+        let bal = t.balance || 0;
 
-let totalProfit = 0;
+        // Totals for WhatsApp
+        if (t.type === "SALE" || t.type === "INSTALLMENT") {
+            s += amt;
+            p += profit;
+            d += bal;
+        }
 
-products.forEach(p => {
+        // Row for CSV
+        rows.push([
+            dateStr, 
+            dateObj.toLocaleTimeString(), 
+            t.type, 
+            t.name, 
+            amt, 
+            bal, 
+            profit
+        ]);
 
-let buy = Number(p.buy) || 0;
-let sell = Number(p.price) || 0;
-let qty = Number(p.sold) || 0;
+        // Daily Profit Breakdown Logic
+        if (!dailyProfits[dateStr]) dailyProfits[dateStr] = 0;
+        dailyProfits[dateStr] += profit;
+    });
 
-// ✅ PROFIT PER UNIT
-let profitPerUnit = sell - buy;
+    // 2. Add Daily Summary to the CSV rows
+    rows.push([]);
+    rows.push(["DAILY PROFIT SUMMARY", "", "", "", "", "", ""]);
+    for (let date in dailyProfits) {
+        rows.push([date, "", "", "", "", "Total Profit:", dailyProfits[date]]);
+    }
 
-// ✅ TOTAL PROFIT
-let total = profitPerUnit * qty;
+    // 3. Action: Send WhatsApp Summary
+    let phone = localStorage.getItem("owner_phone");
+    let msg = `*KIJIPOS WEEKLY SUMMARY*%0A` +
+              `----------------------------%0A` +
+              `Total Sales: KES ${s}%0A` +
+              `Total Profit: KES ${p}%0A` +
+              `Unpaid Debts: KES ${d}%0A` +
+              `----------------------------%0A` +
+              `_Detailed CSV report downloaded._`;
 
-totalProfit += total;
-
-rows.push([
-p.name,
-buy,
-sell,
-qty,
-profitPerUnit,
-total
-]);
-
-});
-
-rows.push([]);
-rows.push(["","","","","TOTAL PROFIT", totalProfit]);
-
-download(rows,"Product_Profit_Report.csv");
+    if (confirm("Send Weekly Summary to WhatsApp and Download Detailed CSV?")) {
+        // Send WhatsApp
+        if (phone) {
+            window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+        } else {
+            alert("Owner phone number not set in Admin.");
+        }
+        
+        // Trigger CSV Download
+        downloadCSV(rows, "Weekly_Performance_Report.csv");
+    }
 }
 
-// INVENTORY
-function exportInventory(){
-let rows=[["Name","Buy","Sell","Stock"]];
-products.forEach(p=>rows.push([p.name,p.buy,p.price,p.stock]));
-download(rows,"Inventory.csv");
+function exportProfitReport() {
+    let rows = [["Item Name", "Buying Price", "Selling Price", "Quantity Sold", "Profit Per Item", "Total Profit Made"]];
+    let grandProfit = 0;
+    products.forEach(p => {
+        let margin = p.price - (p.buy || 0);
+        let total = (p.sold || 0) * margin;
+        grandProfit += total;
+        rows.push([p.name, p.buy, p.price, p.sold || 0, margin, total]);
+    });
+    rows.push([], ["TOTAL BUSINESS PROFIT", "", "", "", "", grandProfit]);
+    downloadCSV(rows, "Profit_Report.csv");
 }
 
-// DOWNLOAD
-function download(rows,name){
-let csv = rows.map(r=>r.join(",")).join("\n");
-let blob = new Blob([csv]);
-let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download=name;
-a.click();
+function downloadCSV(rows, filename) {
+    let csv = rows.map(r => r.join(",")).join("\n");
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+    a.download = filename; 
+    a.click();
 }
 
-// CLOSE DAY
-function closeDay(){
-
-exportExcel();
-
-let s=0,e=0,bal=opening;
-
-tx.forEach(t=>{
-t.type==="SALE"?(s+=t.amount,bal+=t.amount):(e+=t.amount,bal-=t.amount);
-});
-
-let choice = prompt(`Closing Balance: ${bal}
-
-1 Carry Forward
-2 Edit Opening
-3 Reset`);
-
-if(choice=="1") opening = bal;
-else if(choice=="2"){
-let n = prompt("New opening",bal);
-if(n) opening = +n;
-}else opening = 0;
-
-tx=[];
-save();
+// --- SECURITY & ADMIN ---
+async function init() {
+    try {
+        let ref = db.collection("clients").doc(deviceId);
+        let doc = await ref.get();
+        if(!doc.exists) {
+            await ref.set({ business: CONFIG.BUSINESS_NAME, device: deviceId, installDate: Date.now(), paid: false, locked: false });
+            document.getElementById("statusBadge").innerText = "FREE TRIAL";
+        } else {
+            let data = doc.data();
+            let trialExpired = (Date.now() - data.installDate) > 604800000; // 7 Days
+            if(data.locked || (!data.paid && trialExpired)) {
+                document.getElementById("lockScreen").style.display = "flex";
+            }
+            document.getElementById("statusBadge").innerText = data.paid ? "FULL VERSION" : "FREE TRIAL";
+        }
+    } catch(e) { 
+        document.getElementById("statusBadge").innerText = "OFFLINE MODE"; 
+    }
+    render();
 }
 
-// =========================
-// RENDER
-// =========================
-function render(){
-
-let s=0,e=0,bal=opening;
-
-// update product dropdown with search
-filterProducts();
-
-let html="";
-
-tx.forEach(t=>{
-t.type==="SALE"?(s+=t.amount,bal+=t.amount):(e+=t.amount,bal-=t.amount);
-
-if(t.name.toLowerCase().includes(search.value.toLowerCase())){
-html+=`
-<div class="tx">
-<div class="${t.type==='SALE'?'sale':'expense'}">
-${t.type} - ${t.name} : KES ${t.amount}
-</div>
-<div>
-<button class="edit" onclick="editTx(${t.id})">Edit</button>
-<button class="delete" onclick="deleteTx(${t.id})">Delete</button>
-</div>
-</div>`;
-}
-});
-
-openingDisplay.innerText=opening;
-sales.innerText=s;
-expenses.innerText=e;
-profit.innerText=s-e;
-closing.innerText=bal;
-count.innerText=tx.length;
-
-list.innerHTML=html;
+function verifyLicenseCode() {
+    if(document.getElementById("unlockCode").value === CONFIG.LICENSE_CODE) {
+        db.collection("clients").doc(deviceId).update({ paid: true, locked: false }).then(() => location.reload());
+    } else { 
+        alert("Incorrect Unlock Key."); 
+    }
 }
 
-
-// =========================
-// EDIT TRANSACTION (FIXED POSITION)
-// =========================
-function editTx(id){
-
-let t = tx.find(x=>x.id===id);
-if(!t) return;
-
-let newAmount = prompt("Edit Amount", t.amount);
-if(newAmount === null) return;
-
-if(newAmount.trim() !== "" && !isNaN(newAmount)){
-t.amount = +newAmount;
+// Admin Controls connecting to Firebase
+function openAdmin() { document.getElementById("adminPanel").style.display = "flex"; }
+function closeAdmin() { 
+    document.getElementById("adminPanel").style.display = "none"; 
+    document.getElementById("adminPass").value = ""; 
+    // This forces the login screen to show next time you open it
+    document.getElementById("adminAuth").style.display = "block"; 
+    document.getElementById("adminTools").style.display = "none"; 
 }
 
-let newName = prompt("Edit Name", t.name);
-if(newName !== null && newName.trim() !== ""){
-t.name = newName;
+function verifyAdmin() { 
+    if(document.getElementById("adminPass").value === "ADMIN123") { 
+        document.getElementById("adminAuth").style.display = "none"; 
+        document.getElementById("adminTools").style.display = "block"; 
+        loadAllClients(); // Fetch clients when logged in
+    } else { alert("Wrong Password."); }
 }
 
-save();
+async function loadAllClients() {
+    let listDiv = document.getElementById("adminClientList");
+    listDiv.innerHTML = "<p style='color:black;'>Loading clients from database...</p>";
+    
+    try {
+        let snapshot = await db.collection("clients").get();
+        let html = `<table class="admin-table">
+            <tr><th>Business Name</th><th>Status</th><th>Actions</th></tr>`;
+            
+        snapshot.forEach(doc => {
+            let d = doc.data();
+            let statusStr = "";
+            if (d.locked) statusStr = "<span style='color:red'>Locked</span>";
+            else if (d.paid) statusStr = "<span style='color:green'>Paid</span>";
+            else statusStr = "<span style='color:orange'>Trial</span>";
+
+            html += `<tr>
+                <td><b>${d.business || 'Unknown'}</b><br><small style="color:gray">${doc.id.substring(0,8)}...</small></td>
+                <td>${statusStr}</td>
+                <td>
+                    <button class="admin-btn" style="background:#10b981; color:white;" onclick="adminAction('${doc.id}', 'auth')">Auth</button>
+                    <button class="admin-btn" style="background:#ef4444; color:white;" onclick="adminAction('${doc.id}', 'lock')">Lock</button>
+                    <button class="admin-btn" style="background:#3b82f6; color:white;" onclick="adminAction('${doc.id}', 'unlock')">Unlock</button>
+                </td>
+            </tr>`;
+        });
+        html += "</table>";
+        listDiv.innerHTML = html;
+    } catch (e) {
+        listDiv.innerHTML = "<p style='color:red;'>Error loading clients. Ensure Firebase rules allow admin access.</p>";
+    }
 }
 
+function adminAction(targetId, action) {
+    let updateData = {};
+    if (action === 'auth') {
+        updateData = { paid: true, locked: false, paymentStatus: "Fully Paid" };
+    }
+    if (action === 'lock') {
+        updateData = { locked: true };
+    }
+    if (action === 'unlock') {
+        // Allows them to keep working even if trial is over
+        updateData = { locked: false, installDate: Date.now() }; 
+    }
+    if (action === 'installment') {
+        let paidSoFar = Number(prompt("Enter total amount paid so far (Max 12,000):", "4000"));
+        if (paidSoFar >= 12000) {
+            updateData = { paid: true, locked: false, paymentStatus: "Fully Paid" };
+        } else {
+            updateData = { paid: false, locked: false, amountPaid: paidSoFar, paymentStatus: "Installment Plan" };
+        }
+    }
 
-// =========================
-// DELETE TRANSACTION (FIXED)
-// =========================
-function deleteTx(id){
-
-if(!confirm("Delete transaction?")) return;
-
-tx = tx.filter(t => t.id !== id);
-
-save();
+    db.collection("clients").doc(targetId).update(updateData).then(() => {
+        alert("Client status updated!");
+        loadAllClients();
+    });
 }
-
-
-// =========================
-// PRODUCT SEARCH (STABLE)
-// =========================
-function filterProducts(){
-
-let keyword = productSearch.value.toLowerCase().trim();
-
-let select = document.getElementById("productSelect");
-select.innerHTML = `<option value="">Select Product</option>`;
-
-let firstMatchIndex = null;
-
-products.forEach((p, i) => {
-
-if(p.name && p.name.toLowerCase().includes(keyword)){
-
-if(firstMatchIndex === null){
-firstMatchIndex = i; // capture first match
-}
-
-select.innerHTML += `
-<option value="${i}">
-${p.name} (${p.stock})
-</option>`;
-}
-
-});
-
-// 🔥 AUTO-SELECT FIRST MATCH
-if(firstMatchIndex !== null){
-select.value = firstMatchIndex;
-
-// 🔥 TRIGGER AUTO FILL
-fillPrice();
-}
-
-}
-
-// =========================
-// INITIAL RENDER
-// =========================
-render();
 
 </script>
-
 </body>
 </html>
