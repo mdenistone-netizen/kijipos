@@ -452,13 +452,14 @@ input[type=range]{accent-color:var(--primary)}
 // ╚══════════════════════════════════════════════════════════════╝
 // ▼▼▼  EDIT ONLY THESE 4 LINES FOR EACH CLIENT COPY  ▼▼▼
 const LICENSE_CONFIG = {
-  businessName: 'Matheri enterprises ',  // ← CHANGE THIS to client's business name
+  businessName: 'Degum enterprises',  // ← CHANGE THIS to client's business name
   phone:        '0768675139',          // ← CHANGE THIS to client's phone number
-  pin:          '',               // ← Admin PIN; for client copies use '' (client creates own PIN on first use)
+  pin:          '7016',               // ← Admin PIN; for client copies use '' (client creates own PIN on first use)
   maxDevices:   3,                     // ← CHANGE THIS if needed (default: 3)
-  adminPhone:   '0726475310',         // Admin support contact shown in device-limit errors — DO NOT CHANGE
+  adminPhone:   '0768675139',         // Admin support contact shown in device-limit errors — DO NOT CHANGE
   issuedBy:     'Degum Enterprises',
-   // ← DELETE THIS ENTIRE LINE (the one below) in every client copy
+  isOwner:      true   // ← DELETE THIS LINE (only this one line)
+}; // ← DELETE THIS ENTIRE LINE (the one below) in every client copy
   // LINE TO DELETE: just the line above that starts with isOwner
 };
 // ▲▲▲  THAT'S ALL — save, send to client  ▲▲▲
