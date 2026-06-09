@@ -245,7 +245,7 @@ input[type=range]{accent-color:var(--primary)}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
       </div>
       <div style="flex:1;min-width:0">
-        <span id="company-name-display">Degum Electrical</span><br>
+        <span id="company-name-display">Degum Enterprises</span><br>
         <small>DMPS v2</small>
       </div>
       <button id="sidebar-toggle" class="btn-ghost" style="padding:4px" title="Toggle sidebar">
@@ -282,7 +282,7 @@ input[type=range]{accent-color:var(--primary)}
     <div class="lic-header">
       <div class="lic-logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
       <div class="lic-title">DMPS</div>
-      <div class="lic-subtitle" id="lic-subtitle">Degum Electrical Project Management</div>
+      <div class="lic-subtitle" id="lic-subtitle">Degum Project Management</div>
     </div>
     <div class="lic-body">
       <div id="lic-msg" class="lic-msg" style="display:none"></div>
@@ -956,14 +956,14 @@ const K = {
   SETTINGS:'depms_settings',
   CLIENTS:'depms_clients'
 };
-const MAT_CATS = ['Cables','Conduits','Breakers','Switches','Sockets','Lighting','DB Boards','Trunking','Earthing','Connectors','Fasteners','Miscellaneous'];
+const MAT_CATS = ['Materials','Timber','Steel','Cement','Sand & Aggregate','Paint','Pipes & Fittings','Electrical','Plumbing','Hardware','Tools','Safety Equipment','Fixtures','Tiles','Glass','Cables','Ironmongery','Miscellaneous'];
 const EXP_CATS = ['Fuel','Transport','Lunch','Accommodation','Permits','Equipment Hire','Safety Equipment','Tools & Equipment','Communication','Other'];
-const BUDGET_CATS = ['Cables','Conduits','Accessories','Labour','Transport','Accommodation','Equipment','Miscellaneous'];
-const WORKER_ROLES = ['Electrician','Senior Electrician','Apprentice','Supervisor','Helper','Technician'];
+const BUDGET_CATS = ['Materials','Labour','Transport','Equipment','Subcontractors','Accommodation','Permits & Fees','Miscellaneous'];
+const WORKER_ROLES = ['Supervisor','Foreman','Artisan','Technician','Labourer','Helper','Specialist','Apprentice','Driver','Security'];
 const PAY_METHODS = ['Cash','Bank Transfer','M-Pesa','Cheque'];
 const PROJ_STATUS = ['Active','Completed','On Hold','Cancelled'];
 const PHOTO_TYPES = ['Before','Progress','After','Inspection','Completion'];
-const INV_CATS = ['Cables','Conduits','Breakers','Accessories','Tools','Safety','Miscellaneous'];
+const INV_CATS = ['Materials','Labour','Equipment','Transport','Subcontractors','Services','Miscellaneous'];
 
 // ═══════════════════════════════════════════
 // STORAGE HELPERS
@@ -1098,24 +1098,24 @@ function projectStats(pid){
 
   // cost breakdown by category
   const matByCat={};
-  for(const cat of MAT_CATS)matByCat[cat]=0;
+  // initialise matByCat from actual material categories used
+  mats.forEach(m=>{const c=(m.category||'Materials').trim();if(matByCat[c]===undefined)matByCat[c]=0;});
   mats.forEach(m=>{const mc=(m.category||'Miscellaneous').trim();if(matByCat[mc]!==undefined)matByCat[mc]+=Number(m.totalCost)||0;else{matByCat[mc]=(matByCat[mc]||0)+(Number(m.totalCost)||0);}});
 
   const expByCat={};
   for(const cat of EXP_CATS)expByCat[cat]=0;
   exps.forEach(e=>{const ec=(e.category||'Other').trim();if(expByCat[ec]!==undefined)expByCat[ec]+=Number(e.amount)||0;else{expByCat[ec]=(expByCat[ec]||0)+(Number(e.amount)||0);}});
 
-  // Actual spend per budget category (for budget variance tab)
-  const categoryActual={
-    'Cables':mats.filter(m=>(m.category||'').trim()==='Cables').reduce((s,m)=>s+(Number(m.totalCost)||0),0),
-    'Conduits':mats.filter(m=>(m.category||'').trim()==='Conduits').reduce((s,m)=>s+(Number(m.totalCost)||0),0),
-    'Accessories':mats.filter(m=>!['Cables','Conduits'].includes(m.category)).reduce((s,m)=>s+(Number(m.totalCost)||0),0),
-    'Labour':totalLabour,
-    'Transport':exps.filter(e=>['Fuel','Transport'].includes(e.category)).reduce((s,e)=>s+(Number(e.amount)||0),0),
-    'Accommodation':exps.filter(e=>e.category==='Accommodation').reduce((s,e)=>s+(Number(e.amount)||0),0),
-    'Equipment':exps.filter(e=>['Equipment Hire','Tools & Equipment'].includes(e.category)).reduce((s,e)=>s+(Number(e.amount)||0),0),
-    'Miscellaneous':exps.filter(e=>['Lunch','Communication','Safety Equipment','Permits','Other'].includes(e.category)).reduce((s,e)=>s+(Number(e.amount)||0),0)
-  };
+  // Actual spend per budget category — dynamic for any project type
+  const _matActual={};mats.forEach(m=>{const c=(m.category||'Materials').trim();_matActual[c]=(_matActual[c]||0)+(Number(m.totalCost)||0);});
+  const _expActual={};exps.forEach(e=>{const c=(e.category||'Other').trim();_expActual[c]=(_expActual[c]||0)+(Number(e.amount)||0);});
+  const categoryActual={};
+  get(K.BUDGET).filter(b=>b.projectId===pid).forEach(b=>{
+    const cat=b.category||'';
+    if(cat==='Labour')categoryActual[cat]=totalLabour;
+    else if(cat==='Transport')categoryActual[cat]=(_matActual[cat]||0)+(_expActual[cat]||0)+(_expActual['Fuel']||0);
+    else categoryActual[cat]=(_matActual[cat]||0)+(_expActual[cat]||0);
+  });
 
   return{cv,totalBudget,totalMats,totalLabour,totalExps,totalActual,totalPaid,
     outstanding,expectedProfit,actualProfit,profitMargin,budgetConsumed,
@@ -1132,22 +1132,22 @@ function seedIfEmpty(){
   const daysAgo5=new Date(Date.now()-5*864e5).toISOString().slice(0,10);
   const in25=new Date(Date.now()+25*864e5).toISOString().slice(0,10);
 
-  addItem(K.PROJECTS,{id:pid,name:'ABC Apartments Wiring',clientName:'John Mwangi',clientPhone:'0712345678',location:'Westlands, Nairobi',startDate:daysAgo5,expectedEndDate:in25,contractValue:500000,status:'Active',notes:'Phase 1 wiring for 12-unit apartment block.',createdAt:today()});
-  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Cables',estimatedCost:120000});
-  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Conduits',estimatedCost:40000});
-  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Accessories',estimatedCost:50000});
-  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Labour',estimatedCost:100000});
+  addItem(K.PROJECTS,{id:pid,name:'Kilimani Apartments — Phase 1',clientName:'John Mwangi',clientPhone:'0712345678',location:'Kilimani, Nairobi',startDate:daysAgo5,expectedEndDate:in25,contractValue:500000,status:'Active',notes:'Phase 1 construction for 12-unit apartment block.',createdAt:today()});
+  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Materials',estimatedCost:200000});
+  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Labour',estimatedCost:120000});
+  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Equipment',estimatedCost:40000});
   addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Transport',estimatedCost:20000});
+  addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Subcontractors',estimatedCost:80000});
   addItem(K.BUDGET,{id:uid(),projectId:pid,category:'Miscellaneous',estimatedCost:20000});
 
-  addItem(K.WORKERS,{id:wid1,name:'Peter Kamau',role:'Electrician',defaultDailyRate:1500,phone:'0701111222',idNo:'12345678',notes:''});
-  addItem(K.WORKERS,{id:wid2,name:'James Otieno',role:'Apprentice',defaultDailyRate:800,phone:'0702222333',idNo:'87654321',notes:''});
+  addItem(K.WORKERS,{id:wid1,name:'Peter Kamau',role:'Foreman',defaultDailyRate:1500,phone:'0701111222',idNo:'12345678',notes:''});
+  addItem(K.WORKERS,{id:wid2,name:'James Otieno',role:'Labourer',defaultDailyRate:800,phone:'0702222333',idNo:'87654321',notes:''});
 
   const d1=new Date(Date.now()-4*864e5).toISOString().slice(0,10);
   const d2=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-  addItem(K.MATERIALS,{id:uid(),projectId:pid,date:d1,material:'Cable 2.5mm Twin & Earth',category:'Cables',quantity:10,unit:'Rolls',unitPrice:3200,supplier:'Nakumatt Electrical',receiptNumber:'RCP-001',totalCost:32000,notes:''});
-  addItem(K.MATERIALS,{id:uid(),projectId:pid,date:d1,material:'20mm PVC Conduit',category:'Conduits',quantity:50,unit:'Pcs',unitPrice:180,supplier:'Nakumatt Electrical',receiptNumber:'RCP-001',totalCost:9000,notes:''});
-  addItem(K.MATERIALS,{id:uid(),projectId:pid,date:d2,material:'Wall Sockets (13A)',category:'Sockets',quantity:30,unit:'Pcs',unitPrice:220,supplier:'City Electrical',receiptNumber:'RCP-002',totalCost:6600,notes:''});
+  addItem(K.MATERIALS,{id:uid(),projectId:pid,date:d1,material:'Timber 2x4 — Structural',category:'Materials',quantity:10,unit:'Pcs',unitPrice:3200,supplier:'Nakumatt Electrical',receiptNumber:'RCP-001',totalCost:32000,notes:''});
+  addItem(K.MATERIALS,{id:uid(),projectId:pid,date:d1,material:'Cement — Portland 50kg',category:'Materials',quantity:50,unit:'Bags',unitPrice:180,supplier:'Nakumatt Electrical',receiptNumber:'RCP-001',totalCost:9000,notes:''});
+  addItem(K.MATERIALS,{id:uid(),projectId:pid,date:d2,material:'Steel Rebar 12mm',category:'Steel',quantity:30,unit:'Pcs',unitPrice:220,supplier:'City Electrical',receiptNumber:'RCP-002',totalCost:6600,notes:''});
 
   addItem(K.LABOUR,{id:uid(),projectId:pid,workerId:wid1,workerName:'Peter Kamau',date:d1,checkIn:'07:30',checkOut:'17:00',hoursWorked:9.5,daysWorked:1,dailyRate:1500,overtimeHours:0,overtimeRate:200,overtimePay:0,totalPaid:1500,notes:'First fix wiring'});
   addItem(K.LABOUR,{id:uid(),projectId:pid,workerId:wid2,workerName:'James Otieno',date:d1,checkIn:'08:00',checkOut:'17:00',hoursWorked:9,daysWorked:1,dailyRate:800,overtimeHours:0,overtimeRate:150,overtimePay:0,totalPaid:800,notes:''});
@@ -1161,12 +1161,12 @@ function seedIfEmpty(){
 
   addItem(K.PROGRESS,{id:uid(),projectId:pid,date:d2,completionPercent:40,notes:'First fix complete, cabling in progress'});
 
-  addItem(K.INVENTORY,{id:uid(),name:'Cable 2.5mm T&E',category:'Cables',unit:'Rolls',quantityInStock:20,unitCost:3200,notes:'Standard domestic wiring'});
-  addItem(K.INVENTORY,{id:uid(),name:'Conduit 20mm PVC',category:'Conduits',unit:'Pcs',quantityInStock:100,unitCost:180,notes:''});
-  addItem(K.INVENTORY,{id:uid(),name:'Wall Socket 13A',category:'Accessories',unit:'Pcs',quantityInStock:50,unitCost:220,notes:''});
-  addItem(K.INVENTORY,{id:uid(),name:'MCB 20A Single Pole',category:'Breakers',unit:'Pcs',quantityInStock:30,unitCost:850,notes:''});
+  addItem(K.INVENTORY,{id:uid(),name:'Cement — Portland 50kg',category:'Materials',unit:'Bags',quantityInStock:50,unitCost:750,notes:'General construction cement'});
+  addItem(K.INVENTORY,{id:uid(),name:'Steel Rebar 12mm',category:'Steel',unit:'Pcs',quantityInStock:80,unitCost:320,notes:'Standard structural rebar'});
+  addItem(K.INVENTORY,{id:uid(),name:'Timber 2x4 — 12ft',category:'Materials',unit:'Pcs',quantityInStock:40,unitCost:550,notes:'Structural and formwork timber'});
+  addItem(K.INVENTORY,{id:uid(),name:'Paint — Interior White 20L',category:'Paint',unit:'Tins',quantityInStock:15,unitCost:2800,notes:'Interior emulsion'});
 
-  localStorage.setItem(K.SETTINGS,JSON.stringify({companyName:'Degum Electrical',vatRate:16,defaultOvertimeRate:200}));
+  localStorage.setItem(K.SETTINGS,JSON.stringify({companyName:'Degum Enterprises',vatRate:16,defaultOvertimeRate:200}));
 }
 
 // ═══════════════════════════════════════════
@@ -1188,7 +1188,7 @@ function icon(path,size=16){return`<svg width="${size}" height="${size}" viewBox
 
 function renderSidebar(){
   const s=getSettings();
-  document.getElementById('company-name-display').textContent=s.companyName||'Degum Electrical';
+  document.getElementById('company-name-display').textContent=s.companyName||'Degum Enterprises';
   const projs=get(K.PROJECTS).filter(p=>p.status==='Active').length;
   const clientCount=get(K.CLIENTS).length;
   let html='';
@@ -1851,7 +1851,7 @@ function renderReportTab(p,st){
   const s=getSettings();
   return`
   <div class="print-title" style="display:block;margin-bottom:16px">
-    <h2>${escHtml(s.companyName||'Degum Electrical')}</h2>
+    <h2>${escHtml(s.companyName||'Degum Enterprises')}</h2>
     <h3>Project Cost Report — ${escHtml(p.name)}</h3>
     <p style="color:#555">Generated: ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</p>
   </div>
@@ -2273,7 +2273,7 @@ function saveSettingsForm(){
   saveSetting('companyName',document.getElementById('s-company').value);
   saveSetting('defaultOvertimeRate',Number(document.getElementById('s-ot').value)||200);
   saveSetting('vatRate',Number(document.getElementById('s-vat').value)||0);
-  document.getElementById('company-name-display').textContent=document.getElementById('s-company').value||'Degum Electrical';
+  document.getElementById('company-name-display').textContent=document.getElementById('s-company').value||'Degum Enterprises';
   toast('Settings saved!');
 }
 
@@ -2405,7 +2405,7 @@ function openInvoiceModal(){
     for(const [cat,val] of Object.entries(byCat).sort((a,b)=>b[1]-a[1])){
       itemChecks+=`<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:13px"><input type="checkbox" class="inv-chk" data-desc="Materials — ${escHtml(cat)}" data-rate="${val}" data-total="${val}" checked> <span style="flex:1">${escHtml(cat)}</span><b>${ksh(val)}</b></label>`;
     }
-    if(st.totalLabour>0)itemChecks+=`<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:13px"><input type="checkbox" class="inv-chk" data-desc="Labour — Electrical Works" data-rate="${st.totalLabour}" data-total="${st.totalLabour}" checked> <span style="flex:1">Labour</span><b>${ksh(st.totalLabour)}</b></label>`;
+    if(st.totalLabour>0)itemChecks+=`<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:13px"><input type="checkbox" class="inv-chk" data-desc="Labour — Project Works" data-rate="${st.totalLabour}" data-total="${st.totalLabour}" checked> <span style="flex:1">Labour</span><b>${ksh(st.totalLabour)}</b></label>`;
     if(st.totalExps>0)itemChecks+=`<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:13px"><input type="checkbox" class="inv-chk" data-desc="Project Expenses (Fuel, Transport, etc.)" data-rate="${st.totalExps}" data-total="${st.totalExps}" checked> <span style="flex:1">Expenses</span><b>${ksh(st.totalExps)}</b></label>`;
   }
 
@@ -2421,7 +2421,7 @@ function openInvoiceModal(){
     <div class="field"><label>Select Cost Items to Invoice</label>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:200px;overflow-y:auto">${itemChecks}</div>
     </div>
-    <div class="field"><label>Notes / Payment Terms</label><textarea id="inv-notes" rows="3" style="width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;resize:vertical">Payment via M-Pesa, Bank Transfer, or Cash. Thank you for choosing ${escHtml(s.companyName||'Degum Electrical')}!</textarea></div>
+    <div class="field"><label>Notes / Payment Terms</label><textarea id="inv-notes" rows="3" style="width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;resize:vertical">Payment via M-Pesa, Bank Transfer, or Cash. Thank you for choosing ${escHtml(s.companyName||'Degum Enterprises')}!</textarea></div>
     ${st.outstanding>0?`<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:6px;padding:10px;margin-bottom:8px;font-size:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
         <span style="color:var(--success)">${icon('<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6">',13)} Outstanding balance due: <b style="font-size:14px">${ksh(st.outstanding)}</b></span>
@@ -2467,7 +2467,7 @@ function generateInvoicePDF(){
   const checks=document.querySelectorAll('.inv-chk:checked');
   let lineItems=[];
   checks.forEach(cb=>{const rate=Number(cb.dataset.rate)||0;lineItems.push({desc:cb.dataset.desc,rate,total:Number(cb.dataset.total)||rate})});
-  if(!lineItems.length)lineItems=[{desc:p.name+' — Electrical Works',rate:Number(p.contractValue)||0,total:Number(p.contractValue)||0}];
+  if(!lineItems.length)lineItems=[{desc:p.name+' — Project Works',rate:Number(p.contractValue)||0,total:Number(p.contractValue)||0}];
 
   const subtotal=lineItems.reduce((s,i)=>s+i.total,0);
   const vatAmt=Math.round(subtotal*vatRate/100);
@@ -2482,9 +2482,9 @@ function generateInvoicePDF(){
   // Header band
   doc.setFillColor(...A);doc.rect(0,0,W,42,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(22);doc.setTextColor(...D);
-  doc.text(s.companyName||'Degum Electrical',14,20);
+  doc.text(s.companyName||'Degum Enterprises',14,20);
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,48,6);
-  doc.text('Professional Electrical Works',14,27);
+  doc.text('Professional Project Services',14,27);
   doc.text('Built by Degum Enterprises',14,33);
   doc.setFont('helvetica','bold');doc.setFontSize(26);doc.setTextColor(...D);
   doc.text('INVOICE',W-14,21,{align:'right'});
@@ -2567,7 +2567,7 @@ function generateInvoicePDF(){
   const pH=doc.internal.pageSize.getHeight();
   doc.setFillColor(...A);doc.rect(0,pH-14,W,14,'F');
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...D);
-  doc.text((s.companyName||'Degum Electrical')+' · Built by Degum Enterprises · DEPMS v2',W/2,pH-8,{align:'center'});
+  doc.text((s.companyName||'Degum Enterprises')+' · Built by Degum Enterprises · DMPS v2',W/2,pH-8,{align:'center'});
   doc.text('Generated: '+new Date().toLocaleDateString('en-GB'),W/2,pH-4,{align:'center'});
 
   try{
@@ -2694,7 +2694,7 @@ function openBudgetItemModal(editId=null){
   <div class="modal-hd"><div class="modal-title">${editId?'Edit Budget Item':'Add Budget Item'}</div><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
   <div class="modal-body">
   <form id="budget-form">
-    <div class="field"><label>Category</label>${catCombo('category',BUDGET_CATS,b.category||'Cables')}</div>
+    <div class="field"><label>Category</label>${catCombo('category',BUDGET_CATS,b.category||'Materials')}</div>
     <div class="field"><label>Estimated Cost (KSh) *</label><input type="number" name="estimatedCost" required value="${b.estimatedCost||''}" placeholder="50000"></div>
   </form>
   </div>
@@ -2718,7 +2718,7 @@ function openMaterialModal(editId=null){
   <form id="mat-form">
     <div class="form-row">
       <div class="field form-full"><label>Material Name *</label><input name="material" required value="${escHtml(m.material||'')}" placeholder="e.g. Cable 2.5mm Twin & Earth"></div>
-      <div class="field"><label>Category</label>${catCombo('category',MAT_CATS,m.category||'Cables')}</div>
+      <div class="field"><label>Category</label>${catCombo('category',MAT_CATS,m.category||'Materials')}</div>
       <div class="field"><label>Date *</label><input type="date" name="date" value="${m.date||today()}"></div>
       <div class="field"><label>Quantity *</label><input type="number" name="quantity" required value="${m.quantity||''}" placeholder="10" oninput="calcMatTotal()"></div>
       <div class="field"><label>Unit</label><input name="unit" value="${escHtml(m.unit||'Rolls')}" placeholder="Rolls, Pcs, Meters..."></div>
@@ -2932,7 +2932,7 @@ function openWorkerModal(editId=null){
   <form id="worker-form">
     <div class="form-row">
       <div class="field form-full"><label>Full Name *</label><input name="name" required value="${escHtml(w.name||'')}"></div>
-      <div class="field"><label>Role</label><select name="role">${WORKER_ROLES.map(r=>`<option ${(w.role||'Electrician')===r?'selected':''}>${r}</option>`).join('')}</select></div>
+      <div class="field"><label>Role</label><select name="role">${WORKER_ROLES.map(r=>`<option ${(w.role||'Supervisor')===r?'selected':''}>${r}</option>`).join('')}</select></div>
       <div class="field"><label>Phone</label><input name="phone" value="${escHtml(w.phone||'')}"></div>
       <div class="field"><label>Default Daily Rate (KSh)</label><input type="number" name="defaultDailyRate" value="${w.defaultDailyRate||1500}"></div>
       <div class="field"><label>ID Number</label><input name="idNo" value="${escHtml(w.idNo||'')}"></div>
@@ -2959,8 +2959,8 @@ function openInventoryModal(editId=null){
   <div class="modal-body">
   <form id="inv-form">
     <div class="form-row">
-      <div class="field form-full"><label>Item Name *</label><input name="name" required value="${escHtml(item.name||'')}" placeholder="e.g. Cable 2.5mm T&E"></div>
-      <div class="field"><label>Category</label>${catCombo('category',INV_CATS,item.category||'Cables')}</div>
+      <div class="field form-full"><label>Item Name *</label><input name="name" required value="${escHtml(item.name||'')}" placeholder="e.g. Cement 50kg / Steel Bar 12mm"></div>
+      <div class="field"><label>Category</label>${catCombo('category',INV_CATS,item.category||'Materials')}</div>
       <div class="field"><label>Unit</label><input name="unit" value="${escHtml(item.unit||'Pcs')}"></div>
       <div class="field"><label>Quantity in Stock</label><input type="number" name="quantityInStock" value="${item.quantityInStock||0}"></div>
       <div class="field"><label>Unit Cost (KSh)</label><input type="number" name="unitCost" value="${item.unitCost||0}"></div>
@@ -3034,7 +3034,7 @@ function openPhotoModal(){
   <div class="modal-hd"><div class="modal-title">Add Photo Evidence</div><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
   <div class="modal-body">
   <div class="field"><label>Photo Type</label><select id="photo-type">${PHOTO_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
-  <div class="field"><label>Description</label><input id="photo-desc" placeholder="e.g. Ground floor wiring first fix"></div>
+  <div class="field"><label>Description</label><input id="photo-desc" placeholder="e.g. Site progress — foundation complete"></div>
   <div class="field"><label>Date</label><input type="date" id="photo-date" value="${today()}"></div>
   <div class="field"><label>Select Photo *</label><input type="file" id="photo-file" accept="image/*" required></div>
   <div id="photo-preview" style="margin-top:8px"></div>
