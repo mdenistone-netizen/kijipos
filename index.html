@@ -449,7 +449,7 @@ input[type=range]{accent-color:var(--primary)}
 <script>
 'use strict';
 // ═══════════════════════════════════════════════════════════════════════
-// DEGUM ENTERPRISES — DEPMS LICENSING SYSTEM
+// DEGUM ENTERPRISES — DMPS LICENSING SYSTEM
 // ═══════════════════════════════════════════════════════════════════════
 //
 // ┌─────────────────────────────────────────────────────────────────────┐
@@ -844,7 +844,7 @@ function exportDeviceRegistry(){
 
 // ─── REMOVE A DEVICE FROM REGISTRY ────────────────────────────
 function removeDevice(fp){
-  if(!confirm('Remove this device? It will need to re-activate to use DEPMS.'))return;
+  if(!confirm('Remove this device? It will need to re-activate to use DMPS.'))return;
   const reg=_getReg().filter(d=>d.id!==fp);
   _saveReg(reg);
   toast('Device removed!');renderPage();
@@ -960,6 +960,30 @@ const MAT_CATS = ['Materials','Timber','Steel','Cement','Sand & Aggregate','Pain
 const EXP_CATS = ['Fuel','Transport','Lunch','Accommodation','Permits','Equipment Hire','Safety Equipment','Tools & Equipment','Communication','Other'];
 const BUDGET_CATS = ['Materials','Labour','Transport','Equipment','Subcontractors','Accommodation','Permits & Fees','Miscellaneous'];
 const WORKER_ROLES = ['Supervisor','Foreman','Artisan','Technician','Labourer','Helper','Specialist','Apprentice','Driver','Security'];
+const PROJECT_TYPES={
+  '': {label:'-- Choose Project Type (Optional) --',budget:[],materials:[]},
+  'Construction / Building': {label:'Construction / Building',
+    budget:[{category:'Materials',estimatedCost:0},{category:'Labour',estimatedCost:0},{category:'Equipment',estimatedCost:0},{category:'Subcontractors',estimatedCost:0},{category:'Transport',estimatedCost:0},{category:'Permits & Fees',estimatedCost:0},{category:'Miscellaneous',estimatedCost:0}],
+    materials:['Cement 50kg Portland','Steel Rebar 12mm','Steel Rebar 16mm','Timber 2x4','River Sand — Tonne','Ballast 20mm — Tonne','Concrete Blocks 150mm','Roofing Sheets — Box Profile','Binding Wire','Nails 4"','Floor Tiles 600x600','Wall Tiles 300x600','Tile Adhesive 20kg','Paint Interior 20L','Paint Exterior 20L','Plywood 18mm','Door Frame Hardwood','Window Frame — Aluminium','Ceiling Board 8x4','PVC Pipes & Fittings']},
+  'Electrical Works': {label:'Electrical Works',
+    budget:[{category:'Cables & Wiring',estimatedCost:0},{category:'DB Boards & Breakers',estimatedCost:0},{category:'Accessories & Sockets',estimatedCost:0},{category:'Conduits & Trunking',estimatedCost:0},{category:'Labour',estimatedCost:0},{category:'Transport',estimatedCost:0},{category:'Miscellaneous',estimatedCost:0}],
+    materials:['Cable 2.5mm Twin & Earth','Cable 4mm T&E','Cable 6mm T&E','20mm PVC Conduit','MCB 20A Single Pole','MCB 32A Single Pole','MCB 63A DP','Consumer Unit — 8way','Wall Socket 13A','Switch 1-Gang','Switch 2-Gang','Light Fitting — LED','Conduit Clips','Cable Ties','Earth Rod 1.2m','PVC Trunking 25x16','Isolation Switch 100A','Energy Meter — Single Phase','Junction Box IP55','Earthing Cable 16mm']},
+  'Plumbing': {label:'Plumbing',
+    budget:[{category:'Pipes & Fittings',estimatedCost:0},{category:'Fixtures & Sanitaryware',estimatedCost:0},{category:'Labour',estimatedCost:0},{category:'Equipment Hire',estimatedCost:0},{category:'Transport',estimatedCost:0},{category:'Miscellaneous',estimatedCost:0}],
+    materials:['CPVC Pipe 1/2"','CPVC Pipe 3/4"','PPR Pipe 20mm Hot','uPVC Waste Pipe 110mm','Ball Valve 1/2" Brass','Elbow 90° 1/2" CPVC','Tee Junction 1/2" CPVC','WC Flush Valve','WC Pan — Close Coupled','Hand Basin — Pedestal','Kitchen Sink — S/Steel','Shower Tray','Water Tank 2000L — Plastic','Float Valve 1/2"','Solvent Cement 500ml','Plumbers Tape — PTFE','Gate Valve 3/4"','Geyser 150L','Shower Mixer Set','Drainage Channel']},
+  'Renovation / Fit-Out': {label:'Renovation / Fit-Out',
+    budget:[{category:'Materials & Finishes',estimatedCost:0},{category:'Tiles & Flooring',estimatedCost:0},{category:'Painting',estimatedCost:0},{category:'Carpentry & Joinery',estimatedCost:0},{category:'Labour',estimatedCost:0},{category:'Transport',estimatedCost:0},{category:'Miscellaneous',estimatedCost:0}],
+    materials:['Floor Tiles 600x600','Wall Tiles 300x600','Tile Adhesive 20kg','Tile Grout 5kg','Paint Interior 20L','Paint Exterior 20L','Wall Primer 20L','Putty — Wall 25kg','Plywood 18mm','Timber 2x3','Skirting Board per m','Ceiling Board 8x4ft','Cornice per m','Sandpaper 100grit — pack','Varnish 4L','Door Hinges Pair','Door Lock Set','Laminate Flooring m²','Gypsum Board 8x4ft','Wall Putty Powder 25kg']},
+  'Civil Works': {label:'Civil Works',
+    budget:[{category:'Materials',estimatedCost:0},{category:'Labour',estimatedCost:0},{category:'Plant & Machinery',estimatedCost:0},{category:'Subcontractors',estimatedCost:0},{category:'Transport',estimatedCost:0},{category:'Permits & Fees',estimatedCost:0},{category:'Miscellaneous',estimatedCost:0}],
+    materials:['Cement 50kg Portland','Steel Rebar 16mm','Steel Rebar 25mm','Ballast 20mm — Tonne','River Sand — Tonne','Hardcore Fill — Tonne','Precast Kerbs','Culvert Pipe 600mm','Manhole Cover — CI','Bitumen Cold Mix','Geotextile Fabric m²','Reinforcement Mesh A193','Shuttering Timber','Concrete Blocks 200mm','Drainage Channel 300mm']},
+  'Landscaping': {label:'Landscaping',
+    budget:[{category:'Plants & Soil',estimatedCost:0},{category:'Labour',estimatedCost:0},{category:'Irrigation',estimatedCost:0},{category:'Paving & Hardscape',estimatedCost:0},{category:'Transport',estimatedCost:0},{category:'Miscellaneous',estimatedCost:0}],
+    materials:['Topsoil — Tonne','Compost — Bag','Lawn Grass — Rolls m²','Shrubs (assorted)','Trees — Standard','Drip Irrigation Pipe 16mm','Drip Emitters','Soaker Hose 50m','Irrigation Timer','Paving Slabs 400x400','Gravel Decorative — Bag','Edging Strip Steel per m','Fertiliser NPK 50kg','Mulch — Bag','Garden Netting m²']},
+  'IT & Installations': {label:'IT & Installations',
+    budget:[{category:'Equipment & Devices',estimatedCost:0},{category:'Cabling & Networking',estimatedCost:0},{category:'Labour',estimatedCost:0},{category:'Transport',estimatedCost:0},{category:'Miscellaneous',estimatedCost:0}],
+    materials:['CAT6 Cable — 305m Box','Network Switch 24-port','WiFi Access Point','CCTV Camera Dome 2MP','DVR 8-channel','CCTV Cable 100m','Cable Trunking 50x50','Patch Panel 24-port','UPS 1KVA','Server Rack 9U','RJ45 Connectors — pack','Fibre Optic Cable 100m','Conduit 20mm PVC','Cable Ties — pack','Power Strip 6-way']},
+};
 const PAY_METHODS = ['Cash','Bank Transfer','M-Pesa','Cheque'];
 const PROJ_STATUS = ['Active','Completed','On Hold','Cancelled'];
 const PHOTO_TYPES = ['Before','Progress','After','Inspection','Completion'];
@@ -1478,7 +1502,7 @@ function _buildProjectRows(projs){
   for(const p of [...projs].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))){
     const st=projectStats(p.id);
     rows+=`<tr onclick="nav('project',{projectId:'${p.id}',tab:'overview'})" style="cursor:pointer">
-      <td><div class="fw700">${escHtml(p.name)}</div><div class="f12 color-muted">${escHtml(p.location)}</div></td>
+      <td><div class="fw700">${escHtml(p.name)}</div><div class="f12 color-muted">${escHtml(p.location)}</div>${p.projectType?`<span style="font-size:10px;background:rgba(245,158,11,.08);color:var(--primary);border:1px solid rgba(245,158,11,.2);padding:1px 7px;border-radius:100px;margin-top:3px;display:inline-block">${escHtml(p.projectType)}</span>`:''}</td>
       <td>${escHtml(p.clientName)}</td>
       <td>${ksh(st.cv)}</td>
       <td class="${st.totalActual>st.totalBudget?'color-red':'color-amber'}">${ksh(st.totalActual)}</td>
@@ -1488,6 +1512,7 @@ function _buildProjectRows(projs){
       <td>${statusBadge(p.status)}</td>
       <td>${fdate(p.expectedEndDate)}</td>
       <td class="no-print"><div class="gap8">
+        <button type="button" class="btn btn-ghost btn-xs" title="Duplicate" onclick="event.stopPropagation();duplicateProject('${p.id}')">${icon('<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1">',13)}</button>
         <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openProjectModal('${p.id}')">${icon('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">',13)}</button>
         <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();confirmDelete('${p.id}','project')" style="color:var(--danger)">${icon('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2">',13)}</button>
       </div></td>
@@ -1601,7 +1626,7 @@ function renderOverviewTab(p,st){
       </table>
     </div>
     <div class="card">
-      <div class="card-hd"><div class="card-title">Project Details</div></div>
+      <div class="card-hd"><div class="card-title">Project Details</div>${p.projectType?`<span style="font-size:11px;background:rgba(245,158,11,.1);color:var(--primary);border:1px solid rgba(245,158,11,.25);padding:3px 10px;border-radius:100px">${escHtml(p.projectType)}</span>`:''}</div>
       <table>
         <tr><td class="color-muted">Client</td><td class="fw700">${escHtml(p.clientName)}</td></tr>
         <tr><td class="color-muted">Phone</td><td>${escHtml(p.clientPhone||'—')}</td></tr>
@@ -1673,11 +1698,11 @@ function renderMaterialsTab(p,st){
     catRows+=`<tr><td>${escHtml(cat)}</td><td class="text-right fw700">${ksh(val)}</td><td>${budgetPbar(st.totalMats?val/st.totalMats*100:0)}</td></tr>`;
 
   return`
-  <div class="section-hd"><div class="section-title">Module 3: Materials Tracking</div><button class="btn btn-primary btn-sm no-print" onclick="openMaterialModal()">${icon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12">')} Add Material Purchase</button></div>
+  <div class="section-hd"><div class="section-title">Module 3: Materials Tracking</div><div class="gap8">${p.projectType&&PROJECT_TYPES[p.projectType]?`<button class="btn btn-outline btn-sm no-print" onclick="showMaterialSuggestions('${p.id}','${p.projectType}')" style="font-size:11px">&#128161; Suggestions</button>`:''}<button class="btn btn-primary btn-sm no-print" onclick="openMaterialModal()">${icon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12">')} Add Material</button></div>
   <div class="kpi-grid mb16">
     <div class="kpi"><div class="kpi-label">Total Material Cost</div><div class="kpi-value kpi-amber">${ksh(st.totalMats)}</div></div>
     <div class="kpi"><div class="kpi-label">Purchases</div><div class="kpi-value">${mats.length}</div></div>
-    <div class="kpi"><div class="kpi-label">Budget (Materials)</div><div class="kpi-value">${ksh(get(K.BUDGET).filter(b=>b.projectId===p.id&&b.category==='Cables').reduce((s,b)=>s+b.estimatedCost,0)+get(K.BUDGET).filter(b=>b.projectId===p.id&&b.category==='Conduits').reduce((s,b)=>s+b.estimatedCost,0)+get(K.BUDGET).filter(b=>b.projectId===p.id&&b.category==='Accessories').reduce((s,b)=>s+b.estimatedCost,0))}</div></div>
+    <div class="kpi"><div class="kpi-label">Total Project Budget</div><div class="kpi-value">${ksh(get(K.BUDGET).filter(b=>b.projectId===p.id).reduce((s,b)=>s+(Number(b.estimatedCost)||0),0))}</div></div>
   </div>
   ${catRows?`<div class="card mb16"><div class="card-hd"><div class="card-title">Materials by Category</div></div><table>${catRows}</table></div>`:''}
   <div class="tbl-wrap">${mats.length?`<table><thead><tr><th>Date</th><th>Item</th><th>Category</th><th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Total</th><th>Supplier</th><th>Receipt</th><th class="no-print"></th></tr></thead><tbody>${rows}</tbody><tfoot><tr style="background:var(--card2)"><td colspan="5" class="fw700">TOTAL</td><td class="text-right fw700 color-amber">${ksh(st.totalMats)}</td><td colspan="2"></td><td class="no-print"></td></tr></tfoot></table>`:`<div class="tbl-empty">No materials recorded. <button class="btn btn-primary btn-sm" onclick="openMaterialModal()">Add first purchase</button></div>`}</div>`;
@@ -1975,7 +2000,11 @@ function renderWorkers(){
     </tr>`;
   }
   document.getElementById('page-area').innerHTML=`
-  <div class="tbl-wrap">${workers.length?`<table><thead><tr><th>Name</th><th>Role</th><th>Phone</th><th class="text-right">Daily Rate</th><th class="text-right">Days Worked</th><th class="text-right">Total Hours</th><th class="text-right">Projects</th><th class="text-right">Total Earned</th><th class="no-print"></th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="tbl-empty">No workers added. <button class="btn btn-primary btn-sm" onclick="openWorkerModal()">Add first worker</button></div>`}</div>`;
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center" class="no-print">
+    <input id="worker-search" type="search" placeholder="Search by name, role, or phone…" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--card);color:var(--text);font-size:13px" oninput="_filterWorkers()">
+    <span id="worker-count" class="f12 color-muted" style="white-space:nowrap">${workers.length} worker${workers.length!==1?'s':''}</span>
+  </div>
+  <div id="workers-tbl-wrap" class="tbl-wrap">${workers.length?`<table id="workers-table"><thead><tr><th>Name</th><th>Role</th><th>Phone</th><th class="text-right">Daily Rate</th><th class="text-right">Days Worked</th><th class="text-right">Total Hours</th><th class="text-right">Projects</th><th class="text-right">Total Earned</th><th class="no-print"></th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="tbl-empty">No workers added. <button class="btn btn-primary btn-sm" onclick="openWorkerModal()">Add first worker</button></div>`}</div>`;
 }
 
 // ═══════════════════════════════════════════
@@ -2150,7 +2179,7 @@ function openClientModal(editId=null){
 function submitClientForm(editId){
   const form=document.getElementById('client-form');
   const data=new FormData(form);
-  const obj={name:data.get('name'),phone:data.get('phone'),email:data.get('email'),company:data.get('company'),location:data.get('location'),notes:data.get('notes')};
+  const obj={name:data.get('name'),phone:data.get('phone'),email:data.get('email'),company:data.get('company'),location:data.get('location'),notes:data.get('notes'),projectType:data.get('projectType')||''};
   if(!obj.name||!obj.phone){alert('Name and phone are required');return}
   if(editId){updateItem(K.CLIENTS,editId,{...obj,updatedAt:today()});toast('Client updated!');}
   else{addItem(K.CLIENTS,{...obj,id:uid(),createdAt:today()});toast('Client added!');}
@@ -2627,8 +2656,18 @@ function openProjectModal(editId=null){
   <div class="modal-hd"><div class="modal-title">${editId?'Edit Project':'New Project'}</div><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
   <div class="modal-body">
   <form id="proj-form">
+  <div class="field form-full mb8">
+    <label>Project Type</label>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select name="projectType" id="proj-type-sel" style="flex:1;min-width:180px;background:var(--card);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:13px;" onchange="onProjectTypeChange()">
+        ${Object.entries(PROJECT_TYPES).map(([k,v])=>`<option value="${k}" ${(p.projectType||'')===(k)?'selected':''}>${v.label}</option>`).join('')}
+      </select>
+      <button type="button" class="btn btn-primary btn-sm" id="apply-type-btn" style="white-space:nowrap;${(p.projectType||'')?'':'display:none'}" onclick="applyProjectType()">&#10003; Apply Template</button>
+    </div>
+    <div id="proj-type-hint" style="font-size:11px;color:var(--muted);margin-top:5px;">Select a type to auto-fill budget categories &amp; material suggestions.</div>
+  </div>
   <div class="form-row">
-    <div class="field form-full"><label>Project Name *</label><input name="name" required value="${escHtml(p.name||'')}" placeholder="e.g. ABC Apartments Wiring"></div>
+    <div class="field form-full"><label>Project Name *</label><input name="name" required value="${escHtml(p.name||'')}" placeholder="e.g. Kilimani Apartments Phase 1 / House Renovation / Office Fit-Out"></div>
     <div class="field"><label>Client Name *</label><input name="clientName" required value="${escHtml(p.clientName||'')}"></div>
     <div class="field"><label>Client Phone</label><input name="clientPhone" value="${escHtml(p.clientPhone||'')}"></div>
     <div class="field form-full"><label>Location</label><input name="location" value="${escHtml(p.location||'')}"></div>
@@ -2652,7 +2691,7 @@ function openProjectModal(editId=null){
 }
 
 let pendingBudgetItems=[];
-function addBudgetRowModal(){pendingBudgetItems=[];document.getElementById('new-budget-row').style.display='flex';document.getElementById('nb-cost').focus()}
+function addBudgetRowModal(){document.getElementById('new-budget-row').style.display='flex';document.getElementById('nb-cost').focus()}
 function saveBudgetRowModal(){
   const catHidden=document.querySelector('#new-budget-row input[type=hidden][name=category]');
   const cat=(catHidden?catHidden.value:'')||'Miscellaneous';
@@ -2676,7 +2715,7 @@ function removeBudgetRow(id,fromDB){
 function submitProjectForm(editId){
   const form=document.getElementById('proj-form');
   const data=new FormData(form);
-  const obj={name:data.get('name'),clientName:data.get('clientName'),clientPhone:data.get('clientPhone'),location:data.get('location'),startDate:data.get('startDate'),expectedEndDate:data.get('expectedEndDate'),contractValue:Number(data.get('contractValue')),status:data.get('status'),notes:data.get('notes')};
+  const obj={name:data.get('name'),clientName:data.get('clientName'),clientPhone:data.get('clientPhone'),location:data.get('location'),startDate:data.get('startDate'),expectedEndDate:data.get('expectedEndDate'),contractValue:Number(data.get('contractValue')),status:data.get('status'),notes:data.get('notes'),projectType:data.get('projectType')||''};
   if(!obj.name||!obj.clientName||!obj.contractValue){alert('Fill required fields');return}
   let pid;
   if(editId){updateItem(K.PROJECTS,editId,{...obj,updatedAt:today()});pid=editId;}
@@ -3128,6 +3167,109 @@ window.addEventListener('error',function(e){
   }catch(_){}
 });
 checkAndBoot();
+
+// ─── WORKER SEARCH ───
+function _filterWorkers(){
+  'use strict';
+  const q=(document.getElementById('worker-search')||{}).value||'';
+  const countEl=document.getElementById('worker-count');
+  const wrap=document.getElementById('workers-tbl-wrap');
+  if(!wrap)return;
+  const rows=[...wrap.querySelectorAll('#workers-table tbody tr')];
+  let vis=0;
+  rows.forEach(tr=>{
+    const txt=tr.textContent.toLowerCase();
+    const show=!q||txt.includes(q.toLowerCase());
+    tr.style.display=show?'':'none';
+    if(show)vis++;
+  });
+  if(countEl)countEl.textContent=vis+(vis!==rows.length?' of '+rows.length:'')+' worker'+(vis!==1?'s':'');
+}
+
+// ─── PROJECT TYPE AUTO-FILL ───
+function onProjectTypeChange(){
+  const sel=document.getElementById('proj-type-sel');
+  const btn=document.getElementById('apply-type-btn');
+  const hint=document.getElementById('proj-type-hint');
+  if(!sel)return;
+  const type=PROJECT_TYPES[sel.value];
+  if(btn)btn.style.display=(sel.value&&type&&type.budget&&type.budget.length)?'':'none';
+  if(hint&&type&&type.materials&&type.materials.length){
+    hint.textContent='Suggested items: '+type.materials.slice(0,5).join(', ')+(type.materials.length>5?'…':'');
+  }else if(hint){hint.textContent='Select a type to auto-fill budget categories & material suggestions.';}
+}
+function applyProjectType(){
+  const sel=document.getElementById('proj-type-sel');
+  if(!sel||!sel.value)return;
+  const type=PROJECT_TYPES[sel.value];
+  if(!type||!type.budget||!type.budget.length){toast('No template for this type');return;}
+  const tbody=document.getElementById('budget-rows-modal');
+  if(!tbody)return;
+  // Remove only pending (temp) rows — keep DB rows that are already saved
+  [...tbody.querySelectorAll('tr')].filter(r=>r.id.startsWith('br-tmp-')).forEach(r=>r.remove());
+  pendingBudgetItems=pendingBudgetItems.filter(x=>!x.id.startsWith('tmp-'));
+  // Add template budget categories
+  for(const b of type.budget){
+    const tempId='tmp-'+uid();
+    pendingBudgetItems.push({id:tempId,category:b.category,estimatedCost:0});
+    const tr=document.createElement('tr');tr.id='br-'+tempId;
+    tr.innerHTML=`<td>${escHtml(b.category)}</td><td class="text-right">${ksh(0)}</td><td><button type="button" class="btn btn-ghost btn-xs" onclick="removeBudgetRow('${tempId}',false)" style="color:var(--danger)">✕</button></td>`;
+    tbody.appendChild(tr);
+  }
+  // Update hint to show material suggestions
+  const hint=document.getElementById('proj-type-hint');
+  if(hint&&type.materials&&type.materials.length){
+    hint.textContent='Budget template applied. Suggested materials: '+type.materials.slice(0,6).join(', ')+'…';
+    hint.style.color='var(--success,#10b981)';
+  }
+  toast('✓ Budget template applied — set the estimated costs for each line');
+}
+
+// ─── DUPLICATE PROJECT ───
+function duplicateProject(pid){
+  const p=getById(K.PROJECTS,pid);
+  if(!p)return;
+  const newId=uid();
+  const copy={...p,id:newId,name:p.name+' (Copy)',status:'Active',createdAt:today(),updatedAt:today()};
+  delete copy.id;
+  addItem(K.PROJECTS,{...copy,id:newId});
+  // Duplicate budget items
+  const budget=get(K.BUDGET).filter(b=>b.projectId===pid);
+  budget.forEach(b=>addItem(K.BUDGET,{...b,id:uid(),projectId:newId}));
+  toast('✓ Project duplicated with budget template');
+  nav('project',{projectId:newId,tab:'overview'});
+}
+
+
+// ─── MATERIAL SUGGESTIONS POPUP ───
+function showMaterialSuggestions(pid,typeKey){
+  const type=PROJECT_TYPES[typeKey];
+  const materials=(type&&type.materials)||[];
+  if(!materials.length){toast('No suggestions for this type');return;}
+  let items='';
+  materials.forEach(function(m){
+    const safe=escHtml(m);
+    items+='<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border);gap:8px">'
+      +'<span style="font-size:13px">'+safe+'</span>'
+      +'<button class="btn btn-primary btn-xs no-print" data-matname="'+safe+'" data-pid="'+pid+'" onclick="prefillMaterial(this)" style="white-space:nowrap">+ Add</button>'
+      +'</div>';
+  });
+  showModal('<div class="modal-hd"><div class="modal-title">&#128161; Suggested — '+escHtml(typeKey)+'</div><button class="btn btn-ghost btn-sm" onclick="closeModal()">&#10005;</button></div>'
+    +'<div class="modal-body" style="padding:0;max-height:440px;overflow-y:auto">'+items+'</div>'
+    +'<div class="modal-ft"><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+}
+function prefillMaterial(btn){
+  const name=btn.dataset.matname||'';
+  closeModal();
+  setTimeout(function(){
+    openMaterialModal();
+    setTimeout(function(){
+      var inp=document.querySelector('#mat-form input[name=material]');
+      if(inp){inp.value=name;inp.dispatchEvent(new Event('input'));inp.focus();}
+    },100);
+  },120);
+}
+
 </script>
 </body>
 </html>
